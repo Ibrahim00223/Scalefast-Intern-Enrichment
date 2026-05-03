@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,6 +7,16 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/intern_enrichment"
     LOOKUP_FUZZY_THRESHOLD: float = 0.55
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def coerce_asyncpg_url(cls, v: str) -> str:
+        # Railway (and most providers) supply postgresql:// — asyncpg needs postgresql+asyncpg://
+        if v.startswith("postgresql://") or v.startswith("postgres://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1).replace(
+                "postgres://", "postgresql+asyncpg://", 1
+            )
+        return v
 
 
 settings = Settings()
