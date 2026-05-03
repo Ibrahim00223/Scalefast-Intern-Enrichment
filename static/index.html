@@ -281,6 +281,13 @@
 <script>
 const API = '/api/v1';
 
+async function apiJSON(res) {
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return res.json();
+  const text = await res.text();
+  throw new Error(`Erreur serveur (${res.status}) : ${text.slice(0, 120)}`);
+}
+
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('nav button').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -319,8 +326,8 @@ document.getElementById('form-single').addEventListener('submit', async e => {
         linkedin_url: document.getElementById('s-linkedin').value.trim() || null,
       })
     });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const d = await res.json();
+    const d = await apiJSON(res);
+    if (!res.ok) throw new Error(d.detail || res.statusText);
     const pct = Math.round(d.score * 100);
     const l = d.lead;
     let html = `<div class="result-box ${d.found ? 'found' : 'not-found'}">
@@ -375,7 +382,7 @@ document.getElementById('btn-batch').addEventListener('click', async () => {
   try {
     const form = new FormData(); form.append('file', file);
     const res = await fetch(`${API}/lookup/batch`, { method:'POST', body:form });
-    if(!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
     const csv = await res.text();
     batchBlob = new Blob([csv], {type:'text/csv'});
     document.getElementById('btn-dl').style.display = '';
@@ -424,7 +431,7 @@ async function loadLeads(page = 1) {
   if(q) params.append('q', q);
   try {
     const res = await fetch(`${API}/leads?${params}`);
-    const d = await res.json();
+    const d = await apiJSON(res);
     let html = '';
     if(!d.items.length) { html = '<div class="empty">Aucun lead.</div>'; document.getElementById('leads-pagination').innerHTML = ''; }
     else {
@@ -456,7 +463,7 @@ document.getElementById('form-add-lead').addEventListener('submit', async e => {
         linkedin_url: document.getElementById('al-lurl').value.trim() || null,
       })
     });
-    if(!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
     document.getElementById('form-add-lead').reset();
     document.getElementById('add-lead-form').classList.remove('open');
     loadLeads(1);
@@ -470,7 +477,7 @@ async function loadCompanies(page = 1) {
   if(q) params.append('q', q);
   try {
     const res = await fetch(`${API}/companies?${params}`);
-    const d = await res.json();
+    const d = await apiJSON(res);
     let html = '';
     if(!d.items.length) { html = '<div class="empty">Aucune entreprise.</div>'; document.getElementById('co-pagination').innerHTML = ''; }
     else {
@@ -501,7 +508,7 @@ document.getElementById('form-add-co').addEventListener('submit', async e => {
         number_of_employees: parseInt(document.getElementById('ac-emp').value) || null,
       })
     });
-    if(!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
     document.getElementById('form-add-co').reset();
     document.getElementById('add-co-form').classList.remove('open');
     loadCompanies(1);
@@ -531,7 +538,7 @@ async function loadInteractions(page = 1) {
   if(status) params.append('status', status);
   try {
     const res = await fetch(`${API}/interactions?${params}`);
-    const d = await res.json();
+    const d = await apiJSON(res);
     let html = '';
     if(!d.items.length) { html = '<div class="empty">Aucune interaction.</div>'; document.getElementById('int-pagination').innerHTML = ''; }
     else {
@@ -567,7 +574,7 @@ document.getElementById('form-add-int').addEventListener('submit', async e => {
         infos:     document.getElementById('ai-infos').value.trim() || null,
       })
     });
-    if(!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
     document.getElementById('form-add-int').reset();
     document.getElementById('add-int-form').classList.remove('open');
     loadInteractions(1);
@@ -581,7 +588,7 @@ async function importFile(endpoint, fileInputId, resultId) {
   const form = new FormData(); form.append('file', file);
   try {
     const res = await fetch(endpoint, {method:'POST', body:form});
-    const d = await res.json();
+    const d = await apiJSON(res);
     if(!res.ok) throw new Error(d.detail || res.statusText);
     document.getElementById(resultId).textContent = `✓ ${d.created} créés, ${d.skipped} ignorés, ${d.errors.length} erreurs sur ${d.total_rows} lignes.`;
   } catch(err) { document.getElementById(resultId).textContent = 'Erreur : ' + err.message; }
