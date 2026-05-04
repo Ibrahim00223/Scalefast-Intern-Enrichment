@@ -14,7 +14,10 @@ from alembic import op
 
 
 def upgrade() -> None:
-    # Drop old contacts table
+    # Drop old tables (contacts from v1, and new tables if a previous broken run left them)
+    op.execute("DROP TABLE IF EXISTS interactions CASCADE")
+    op.execute("DROP TABLE IF EXISTS leads CASCADE")
+    op.execute("DROP TABLE IF EXISTS companies CASCADE")
     op.execute("DROP TABLE IF EXISTS contacts CASCADE")
 
     # ── Companies ────────────────────────────────────────────────────────────────
