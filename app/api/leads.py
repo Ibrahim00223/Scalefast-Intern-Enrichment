@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.models.lead import Lead
 from app.schemas.lead import LeadCreate, LeadListOut, LeadOut, LeadUpdate
-from app.services.normalization import normalize_linkedin_url, normalize_name
+from app.services.normalization import normalize_linkedin_url
 
 router = APIRouter(prefix="/leads", tags=["leads"])
 
@@ -20,9 +20,6 @@ async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
     lead = Lead(
         last_name=body.last_name,
         first_name=body.first_name,
-        full_name=f"{body.first_name} {body.last_name}",
-        last_name_normalized=normalize_name(body.last_name),
-        first_name_normalized=normalize_name(body.first_name),
         company_id=body.company_id,
         company_name=body.company_name,
         job_title=body.job_title,
@@ -34,9 +31,12 @@ async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
     try:
         await db.commit()
         await db.refresh(lead)
-    except Exception:
+    except Exception as exc:
         await db.rollback()
-        raise HTTPException(status_code=409, detail="A lead with this LinkedIn URL already exists.")
+        msg = str(exc)
+        if "linkedin_url" in msg or "unique" in msg.lower():
+            raise HTTPException(status_code=409, detail="Un lead avec cette URL LinkedIn existe déjà.")
+        raise HTTPException(status_code=500, detail=f"Erreur base de données : {msg[:200]}")
     return lead
 
 
@@ -83,13 +83,10 @@ async def update_lead(lead_id: uuid.UUID, body: LeadUpdate, db: AsyncSession = D
     for field, value in body.model_dump(exclude_unset=True).items():
         if field == "linkedin_url":
             value = normalize_linkedin_url(value)
-        if field == "last_name" and value:
-            lead.last_name_normalized = normalize_name(value)
-        if field == "first_name" and value:
-            lead.first_name_normalized = normalize_name(value)
+        # Skip GENERATED columns — PostgreSQL recomputes them automatically
+        if field in ("full_name", "last_name_normalized", "first_name_normalized"):
+            continue
         setattr(lead, field, value)
-    # Recompute full_name if names changed
-    lead.full_name = f"{lead.first_name} {lead.last_name}"
     await db.commit()
     await db.refresh(lead)
     return lead
@@ -138,9 +135,6 @@ async def import_leads(file: UploadFile = File(...), db: AsyncSession = Depends(
             lead = Lead(
                 last_name=last,
                 first_name=first,
-                full_name=f"{first} {last}",
-                last_name_normalized=normalize_name(last),
-                first_name_normalized=normalize_name(first),
                 company_name=get(row, "company_name", "company", "entreprise"),
                 job_title=get(row, "job_title", "poste", "titre", "title"),
                 location=get(row, "location", "localisation"),

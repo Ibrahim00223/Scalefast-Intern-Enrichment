@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Text, func
+from sqlalchemy import Computed, DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,10 +14,16 @@ class Lead(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     last_name: Mapped[str] = mapped_column(Text, nullable=False)
     first_name: Mapped[str] = mapped_column(Text, nullable=False)
-    # GENERATED columns — managed by PostgreSQL, declared here for read access
-    full_name: Mapped[str] = mapped_column(Text, nullable=False)
-    last_name_normalized: Mapped[str] = mapped_column(Text, nullable=False)
-    first_name_normalized: Mapped[str] = mapped_column(Text, nullable=False)
+    # GENERATED ALWAYS AS columns — computed by PostgreSQL, never written by SQLAlchemy
+    full_name: Mapped[str | None] = mapped_column(
+        Text, Computed("trim(first_name || ' ' || last_name)", persisted=True), nullable=True
+    )
+    last_name_normalized: Mapped[str | None] = mapped_column(
+        Text, Computed("lower(trim(last_name))", persisted=True), nullable=True
+    )
+    first_name_normalized: Mapped[str | None] = mapped_column(
+        Text, Computed("lower(trim(first_name))", persisted=True), nullable=True
+    )
     company_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     company_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # denormalized fallback
     job_title: Mapped[str | None] = mapped_column(Text, nullable=True)
