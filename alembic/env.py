@@ -4,7 +4,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 
@@ -21,22 +21,20 @@ import app.models.interaction  # noqa: E402, F401
 
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url from env var if present
-db_url = os.environ.get("DATABASE_URL", "").replace(
-    "postgresql+asyncpg://", "postgresql://"
-)
-if db_url:
-    # Alembic needs a sync URL for its own engine
-    config.set_main_option(
-        "sqlalchemy.url",
-        db_url if not db_url.startswith("postgresql+asyncpg") else db_url.replace("+asyncpg", ""),
-    )
+
+def get_url() -> str:
+    """Return a postgresql+asyncpg:// URL regardless of what the env provides."""
+    url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url") or ""
+    # Normalise: Railway / Heroku supply postgres:// or postgresql://
+    url = url.replace("postgres://", "postgresql://", 1)
+    if not url.startswith("postgresql+asyncpg://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=get_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -52,23 +50,10 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    async_url = os.environ.get(
-        "DATABASE_URL",
-        config.get_main_option("sqlalchemy.url", ""),
-    )
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = async_url
-
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    async with connectable.connect() as connection:
+    engine = create_async_engine(get_url(), poolclass=pool.NullPool)
+    async with engine.connect() as connection:
         await connection.run_sync(do_run_migrations)
-
-    await connectable.dispose()
+    await engine.dispose()
 
 
 def run_migrations_online() -> None:
