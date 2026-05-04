@@ -1,7 +1,7 @@
 import io
 
 import pandas as pd
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,15 @@ from app.schemas.lookup import BatchLookupRow, LookupRequest, LookupResult
 from app.services.lookup import lookup_lead
 
 router = APIRouter(prefix="/lookup", tags=["lookup"])
+
+
+def _read_file(content: bytes, filename: str) -> pd.DataFrame:
+    if filename.endswith(".csv"):
+        return pd.read_csv(io.BytesIO(content), dtype=str)
+    elif filename.endswith((".xlsx", ".xls")):
+        return pd.read_excel(io.BytesIO(content), dtype=str)
+    else:
+        raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportés.")
 
 
 @router.post("", response_model=LookupResult)
@@ -22,33 +31,50 @@ async def lookup_single(body: LookupRequest, db: AsyncSession = Depends(get_db))
     )
 
 
-@router.post("/batch")
-async def lookup_batch(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+@router.post("/columns")
+async def get_columns(file: UploadFile = File(...)):
+    """Return the list of columns detected in a CSV or Excel file."""
     content = await file.read()
-    filename = file.filename or ""
+    df = _read_file(content, file.filename or "")
+    return {"columns": list(df.columns)}
 
-    if filename.endswith(".csv"):
-        df = pd.read_csv(io.BytesIO(content), dtype=str)
-    elif filename.endswith((".xlsx", ".xls")):
-        df = pd.read_excel(io.BytesIO(content), dtype=str)
-    else:
-        raise HTTPException(status_code=400, detail="Only .csv and .xlsx/.xls files are supported.")
 
+@router.post("/batch")
+async def lookup_batch(
+    file: UploadFile = File(...),
+    col_first_name: str = Form(""),
+    col_last_name: str = Form(""),
+    col_linkedin_url: str = Form(""),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Batch lookup. Column names can be passed explicitly via form fields
+    (col_first_name, col_last_name, col_linkedin_url). If omitted, the
+    endpoint falls back to common aliases.
+    """
+    content = await file.read()
+    df = _read_file(content, file.filename or "")
     df = df.where(pd.notnull(df), None)
-    cols = {c.lower().strip(): c for c in df.columns}
+    cols_lower = {c.lower().strip(): c for c in df.columns}
 
-    def find_col(*keys):
-        for k in keys:
-            if k in cols:
-                return cols[k]
+    def find_col(explicit: str, *aliases):
+        if explicit and explicit in df.columns:
+            return explicit
+        for k in aliases:
+            if k in cols_lower:
+                return cols_lower[k]
         return None
 
-    last_col = find_col("last_name", "nom", "last name", "lastname", "surname")
-    first_col = find_col("first_name", "prenom", "prénom", "first name", "firstname")
-    linkedin_col = find_col("linkedin_url", "linkedin", "linkedin url")
+    last_col = find_col(col_last_name, "last_name", "nom", "last name", "lastname", "surname")
+    first_col = find_col(col_first_name, "first_name", "prenom", "prénom", "first name", "firstname")
+    linkedin_col = find_col(col_linkedin_url, "linkedin_url", "linkedin", "linkedin url")
 
     if not last_col or not first_col:
-        raise HTTPException(status_code=422, detail=f"Colonnes 'last_name' et 'first_name' introuvables. Colonnes détectées : {list(df.columns)}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Colonnes 'last_name' et 'first_name' introuvables. "
+                   f"Colonnes détectées : {list(df.columns)}"
+        )
 
     rows: list[BatchLookupRow] = []
     for i, row in df.iterrows():
@@ -57,12 +83,16 @@ async def lookup_batch(file: UploadFile = File(...), db: AsyncSession = Depends(
         linkedin = row.get(linkedin_col) if linkedin_col else None
 
         if not last or not first:
-            rows.append(BatchLookupRow(row_index=int(i)+2, first_name=first, last_name=last, linkedin_url=linkedin, found=False, score=0.0, match_type=None, matched_lead_id=None))
+            rows.append(BatchLookupRow(
+                row_index=int(i) + 2, first_name=first, last_name=last,
+                linkedin_url=linkedin, found=False, score=0.0,
+                match_type=None, matched_lead_id=None,
+            ))
             continue
 
         result = await lookup_lead(first_name=first, last_name=last, linkedin_url=linkedin, session=db)
         rows.append(BatchLookupRow(
-            row_index=int(i)+2, first_name=first, last_name=last, linkedin_url=linkedin,
+            row_index=int(i) + 2, first_name=first, last_name=last, linkedin_url=linkedin,
             found=result.found, score=result.score, match_type=result.match_type,
             matched_lead_id=result.lead.id if result.lead else None,
         ))

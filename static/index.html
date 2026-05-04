@@ -7,113 +7,190 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --blue:#2563eb; --blue-dk:#1d4ed8; --green:#16a34a; --red:#dc2626;
+      --blue:#2563eb; --blue-dk:#1d4ed8; --blue-lt:#eff6ff;
+      --green:#16a34a; --red:#dc2626; --amber:#d97706;
       --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
-      --gray-400:#9ca3af; --gray-600:#4b5563; --gray-800:#1f2937;
+      --gray-300:#d1d5db; --gray-400:#9ca3af; --gray-600:#4b5563; --gray-800:#1f2937;
       --radius:8px; --shadow:0 1px 4px rgba(0,0,0,.08);
     }
     body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--gray-50); color:var(--gray-800); min-height:100vh; }
-    header { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 2rem; display:flex; align-items:center; gap:1rem; height:56px; }
-    header .logo { font-weight:700; font-size:1.1rem; color:var(--blue); }
-    header .sub  { color:var(--gray-400); font-size:.85rem; }
-    nav { display:flex; gap:.25rem; padding:1.25rem 2rem 0; border-bottom:1px solid var(--gray-200); background:#fff; overflow-x:auto; }
-    nav button { padding:.55rem 1.1rem; border:none; background:none; cursor:pointer; font-size:.9rem; color:var(--gray-600); border-bottom:3px solid transparent; margin-bottom:-1px; border-radius:var(--radius) var(--radius) 0 0; white-space:nowrap; transition:color .15s; }
-    nav button.active { color:var(--blue); border-bottom-color:var(--blue); font-weight:600; }
-    nav button:hover:not(.active) { color:var(--gray-800); }
-    main { max-width:960px; margin:2rem auto; padding:0 1.5rem 3rem; }
+
+    /* ── Header ── */
+    header { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 2rem; display:flex; align-items:center; gap:1rem; height:54px; }
+    .logo { font-weight:700; font-size:1.05rem; color:var(--blue); letter-spacing:-.02em; }
+    .logo-sub { color:var(--gray-400); font-size:.8rem; }
+
+    /* ── Main tabs ── */
+    .main-nav { display:flex; gap:0; padding:0 2rem; background:#fff; border-bottom:1px solid var(--gray-200); }
+    .main-nav button { padding:.65rem 1.3rem; border:none; background:none; cursor:pointer; font-size:.88rem; color:var(--gray-600); border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:500; transition:color .15s; white-space:nowrap; }
+    .main-nav button.active { color:var(--blue); border-bottom-color:var(--blue); }
+    .main-nav button:hover:not(.active) { color:var(--gray-800); }
+
+    /* ── Sub-tabs (Data) ── */
+    .sub-nav { display:flex; gap:.25rem; margin-bottom:1.5rem; }
+    .sub-nav button { padding:.4rem 1rem; border:1px solid var(--gray-200); background:#fff; border-radius:99px; cursor:pointer; font-size:.83rem; color:var(--gray-600); font-weight:500; transition:all .15s; }
+    .sub-nav button.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .sub-nav button:hover:not(.active) { border-color:var(--gray-300); color:var(--gray-800); }
+
+    /* ── Layout ── */
+    main { max-width:1000px; margin:2rem auto; padding:0 1.5rem 3rem; }
     .panel { display:none; } .panel.active { display:block; }
+    .sub-panel { display:none; } .sub-panel.active { display:block; }
+
+    /* ── Cards ── */
     .card { background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius); padding:1.75rem; box-shadow:var(--shadow); }
-    h2 { font-size:1.05rem; font-weight:600; margin-bottom:1.25rem; }
-    h3 { font-size:.9rem; font-weight:600; color:var(--gray-600); margin-bottom:.75rem; }
+    .card + .card { margin-top:1.25rem; }
+
+    /* ── Typography ── */
+    h2 { font-size:1rem; font-weight:600; margin-bottom:1.25rem; }
+    h3 { font-size:.85rem; font-weight:600; color:var(--gray-600); margin-bottom:.75rem; text-transform:uppercase; letter-spacing:.04em; }
+
+    /* ── Forms ── */
     .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
-    @media(max-width:600px){ .form-grid { grid-template-columns:1fr; } }
-    .full-span { grid-column:1/-1; }
-    label { display:block; font-size:.82rem; color:var(--gray-600); margin-bottom:.3rem; font-weight:500; }
-    input[type=text],input[type=number],select,textarea { width:100%; padding:.55rem .75rem; border:1px solid var(--gray-200); border-radius:6px; font-size:.9rem; outline:none; transition:border-color .15s; font-family:inherit; }
-    input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
-    textarea { resize:vertical; min-height:72px; }
-    .btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.25rem; border:none; border-radius:6px; font-size:.9rem; font-weight:500; cursor:pointer; transition:background .15s,opacity .15s; }
-    .btn-primary { background:var(--blue); color:#fff; } .btn-primary:hover { background:var(--blue-dk); }
+    @media(max-width:640px){ .form-grid { grid-template-columns:1fr; } }
+    .full { grid-column:1/-1; }
+    label { display:block; font-size:.8rem; color:var(--gray-600); margin-bottom:.28rem; font-weight:500; }
+    .opt-label { color:var(--gray-400); font-weight:400; }
+    input[type=text],input[type=number],select,textarea {
+      width:100%; padding:.5rem .7rem; border:1px solid var(--gray-200); border-radius:6px;
+      font-size:.88rem; outline:none; font-family:inherit; background:#fff;
+      transition:border-color .15s, box-shadow .15s;
+    }
+    input:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    textarea { resize:vertical; min-height:68px; }
+
+    /* ── Buttons ── */
+    .btn { display:inline-flex; align-items:center; gap:.35rem; padding:.48rem 1.1rem; border:none; border-radius:6px; font-size:.86rem; font-weight:500; cursor:pointer; transition:background .15s,opacity .15s; white-space:nowrap; }
+    .btn-primary   { background:var(--blue); color:#fff; }   .btn-primary:hover   { background:var(--blue-dk); }
     .btn-secondary { background:var(--gray-100); color:var(--gray-800); border:1px solid var(--gray-200); } .btn-secondary:hover { background:var(--gray-200); }
-    .btn-danger { background:#fee2e2; color:var(--red); border:1px solid #fca5a5; } .btn-danger:hover { background:#fecaca; }
-    .btn:disabled { opacity:.55; cursor:not-allowed; }
-    .mt { margin-top:1rem; } .mt2 { margin-top:1.5rem; } .mb { margin-bottom:1rem; }
+    .btn-danger    { background:#fee2e2; color:var(--red); border:1px solid #fca5a5; } .btn-danger:hover { background:#fecaca; }
+    .btn-ghost     { background:none; color:var(--gray-600); border:1px solid transparent; } .btn-ghost:hover { background:var(--gray-100); }
+    .btn-sm { padding:.3rem .7rem; font-size:.78rem; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-top:1rem; }
+
+    /* ── Lookup result ── */
     .result-box { margin-top:1.25rem; border-radius:var(--radius); padding:1.25rem 1.5rem; border:1px solid; }
-    .result-box.found { background:#f0fdf4; border-color:#86efac; } .result-box.not-found { background:#fef2f2; border-color:#fca5a5; }
-    .result-badge { display:inline-flex; align-items:center; gap:.4rem; font-size:1rem; font-weight:700; margin-bottom:.75rem; }
+    .result-box.found { background:#f0fdf4; border-color:#86efac; }
+    .result-box.not-found { background:#fef2f2; border-color:#fca5a5; }
+    .result-badge { font-size:.95rem; font-weight:700; margin-bottom:.75rem; }
     .result-badge.found { color:var(--green); } .result-badge.not-found { color:var(--red); }
-    .score-bar-wrap { margin:.5rem 0 1rem; }
-    .score-label { font-size:.8rem; color:var(--gray-600); margin-bottom:.25rem; }
-    .score-bar { height:8px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
+    .score-bar-wrap { margin:.4rem 0 .9rem; }
+    .score-label { font-size:.78rem; color:var(--gray-600); margin-bottom:.2rem; }
+    .score-bar { height:7px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
     .score-fill { height:100%; border-radius:99px; transition:width .4s ease; }
-    .score-fill.high { background:var(--green); } .score-fill.medium { background:#f59e0b; } .score-fill.low { background:var(--red); }
-    .info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.5rem .75rem; margin-top:.75rem; }
-    .info-field .key { color:var(--gray-400); font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; }
-    .info-field .val { color:var(--gray-800); font-weight:500; font-size:.82rem; word-break:break-all; }
-    .dropzone { border:2px dashed var(--gray-200); border-radius:var(--radius); padding:2.5rem 1rem; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; }
-    .dropzone:hover,.dropzone.drag-over { border-color:var(--blue); background:rgba(37,99,235,.04); }
-    .dropzone .icon { font-size:2rem; margin-bottom:.5rem; }
-    .dropzone .hint { font-size:.85rem; color:var(--gray-400); }
-    .dropzone .filename { font-size:.9rem; font-weight:500; color:var(--blue); margin-top:.4rem; }
-    .table-wrap { overflow-x:auto; margin-top:1.25rem; }
-    table { width:100%; border-collapse:collapse; font-size:.85rem; }
-    th { background:var(--gray-50); padding:.55rem .75rem; text-align:left; font-weight:600; font-size:.78rem; color:var(--gray-600); border-bottom:1px solid var(--gray-200); white-space:nowrap; }
-    td { padding:.5rem .75rem; border-bottom:1px solid var(--gray-100); }
+    .score-fill.high { background:var(--green); } .score-fill.medium { background:var(--amber); } .score-fill.low { background:var(--red); }
+    .info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:.45rem .75rem; margin-top:.65rem; }
+    .info-field .key { color:var(--gray-400); font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; }
+    .info-field .val { color:var(--gray-800); font-size:.83rem; font-weight:500; word-break:break-all; }
+
+    /* ── Drop zone ── */
+    .dropzone { border:2px dashed var(--gray-200); border-radius:var(--radius); padding:2rem 1rem; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; }
+    .dropzone:hover,.dropzone.drag-over { border-color:var(--blue); background:var(--blue-lt); }
+    .dropzone .dz-icon { font-size:1.8rem; margin-bottom:.4rem; }
+    .dropzone .dz-hint { font-size:.82rem; color:var(--gray-400); }
+    .dropzone .dz-file { font-size:.88rem; font-weight:500; color:var(--blue); margin-top:.3rem; }
+
+    /* ── Mapping grid ── */
+    .mapping-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin:.75rem 0 1rem; }
+    @media(max-width:520px){ .mapping-grid { grid-template-columns:1fr; } }
+
+    /* ── Tables ── */
+    .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
+    .toolbar input[type=text] { flex:1; min-width:160px; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.84rem; }
+    th { background:var(--gray-50); padding:.5rem .7rem; text-align:left; font-weight:600; font-size:.76rem; color:var(--gray-600); border-bottom:1px solid var(--gray-200); white-space:nowrap; }
+    td { padding:.48rem .7rem; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
     tr:last-child td { border-bottom:none; }
-    .tag { display:inline-block; padding:.15rem .5rem; border-radius:99px; font-size:.75rem; font-weight:600; }
-    .tag.yes { background:#dcfce7; color:var(--green); } .tag.no { background:#fee2e2; color:var(--red); }
-    .tag.appel { background:#dbeafe; color:#1d4ed8; } .tag.mail { background:#f3e8ff; color:#7c3aed; }
-    .search-row { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; }
-    .search-row input { flex:1; min-width:160px; }
-    .loader { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; }
+    tr:hover td { background:var(--gray-50); }
+    .actions-col { white-space:nowrap; text-align:right; }
+
+    /* ── Tags / badges ── */
+    .tag { display:inline-block; padding:.12rem .45rem; border-radius:99px; font-size:.73rem; font-weight:600; }
+    .tag.yes  { background:#dcfce7; color:var(--green); }
+    .tag.no   { background:#fee2e2; color:var(--red); }
+    .tag.appel { background:#dbeafe; color:#1d4ed8; }
+    .tag.mail  { background:#f3e8ff; color:#7c3aed; }
+    .badge { display:inline-block; padding:.15rem .5rem; border-radius:99px; font-size:.73rem; font-weight:500; background:var(--gray-100); color:var(--gray-600); }
+
+    /* ── Inline edit form ── */
+    .edit-row { display:none; background:var(--blue-lt); }
+    .edit-row.open { display:table-row; }
+    .edit-row td { padding:1rem; border-bottom:1px solid var(--gray-200); }
+    .edit-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    @media(max-width:640px){ .edit-grid { grid-template-columns:1fr; } }
+
+    /* ── Collapsible add form ── */
+    .add-section { display:none; margin-top:1.25rem; padding:1.25rem; border-radius:var(--radius); background:var(--blue-lt); border:1px solid #bfdbfe; }
+    .add-section.open { display:block; }
+
+    /* ── Pagination ── */
+    .pagination { display:flex; align-items:center; gap:.5rem; margin-top:.9rem; justify-content:flex-end; font-size:.82rem; color:var(--gray-600); }
+
+    /* ── Stats ── */
+    .stats-row { display:flex; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
+    .stat-box { flex:1; min-width:90px; text-align:center; padding:.6rem; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius); }
+    .stat-box .n { font-size:1.4rem; font-weight:700; }
+    .stat-box .l { font-size:.73rem; color:var(--gray-400); margin-top:.1rem; }
+
+    /* ── Misc ── */
+    .empty { text-align:center; color:var(--gray-400); padding:2.5rem 1rem; font-size:.88rem; }
+    .error-msg { color:var(--red); font-size:.83rem; margin-top:.5rem; }
+    .success-msg { color:var(--green); font-size:.83rem; margin-top:.5rem; }
+    .loader { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    .empty { text-align:center; color:var(--gray-400); padding:2rem; font-size:.9rem; }
-    .error-msg { color:var(--red); font-size:.85rem; margin-top:.5rem; }
-    .collapsible { display:none; margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid var(--gray-200); }
-    .collapsible.open { display:block; }
-    .pagination { display:flex; align-items:center; gap:.5rem; margin-top:1rem; justify-content:flex-end; font-size:.85rem; color:var(--gray-600); }
-    .pagination button { padding:.3rem .65rem; font-size:.82rem; }
-    .badge-status { display:inline-block; padding:.2rem .6rem; border-radius:99px; font-size:.75rem; font-weight:600; background:var(--gray-100); color:var(--gray-600); }
-    .stats-row { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
-    .stat-card { flex:1; min-width:100px; text-align:center; padding:.75rem; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius); }
-    .stat-card .n { font-size:1.5rem; font-weight:700; }
-    .stat-card .l { font-size:.78rem; color:var(--gray-400); }
+    .sep { border:none; border-top:1px solid var(--gray-200); margin:1.25rem 0; }
+    .step-label { font-size:.8rem; font-weight:600; color:var(--blue); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem; }
+
+    /* ── Modal ── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:100; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:#fff; border-radius:var(--radius); padding:1.75rem; width:min(520px,95vw); box-shadow:0 8px 32px rgba(0,0,0,.15); max-height:90vh; overflow-y:auto; }
+    .modal h2 { font-size:1rem; margin-bottom:1.25rem; }
+    .modal-footer { display:flex; gap:.5rem; justify-content:flex-end; margin-top:1.25rem; }
   </style>
 </head>
 <body>
 
 <header>
   <span class="logo">Intern Enrichment</span>
-  <span class="sub">Scalefast — Leads · Companies · Interactions</span>
+  <span class="logo-sub">Scalefast</span>
 </header>
 
-<nav>
-  <button class="active" data-tab="lookup-single">Vérification Lead</button>
-  <button data-tab="lookup-batch">Batch lookup</button>
-  <button data-tab="leads">Leads</button>
-  <button data-tab="companies">Entreprises</button>
-  <button data-tab="interactions">Interactions</button>
+<nav class="main-nav">
+  <button class="active" data-tab="find">🔍 Find Lead</button>
+  <button data-tab="data">🗄 Data</button>
+  <button data-tab="batch">📋 Batch Lookup</button>
 </nav>
 
 <main>
 
 <!-- ══════════════════════════════════════════════════════════
-     TAB 1 — Lookup unitaire
+     TAB 1 — Find Lead
 ══════════════════════════════════════════════════════════ -->
-<div id="tab-lookup-single" class="panel active">
+<div id="tab-find" class="panel active">
   <div class="card">
     <h2>Vérifier si un lead existe</h2>
     <form id="form-single" autocomplete="off">
       <div class="form-grid">
-        <div><label>Prénom *</label><input id="s-first" type="text" placeholder="Jean" required /></div>
-        <div><label>Nom *</label><input id="s-last" type="text" placeholder="Dupont" required /></div>
-        <div class="full-span">
-          <label>URL LinkedIn <span style="color:var(--gray-400);font-weight:400">(optionnel — améliore la précision)</span></label>
+        <div>
+          <label>Prénom *</label>
+          <input id="s-first" type="text" placeholder="Jean" required />
+        </div>
+        <div>
+          <label>Nom *</label>
+          <input id="s-last" type="text" placeholder="Dupont" required />
+        </div>
+        <div class="full">
+          <label>URL LinkedIn <span class="opt-label">(optionnel — améliore la précision)</span></label>
           <input id="s-linkedin" type="text" placeholder="https://www.linkedin.com/in/jeandupont" />
         </div>
       </div>
-      <div class="mt">
-        <button type="submit" class="btn btn-primary" id="btn-single"><span id="lbl-single">Vérifier</span></button>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary" id="btn-single">
+          <span id="lbl-single">Vérifier</span>
+        </button>
       </div>
     </form>
     <div id="result-single"></div>
@@ -121,208 +198,344 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     TAB 2 — Batch lookup
+     TAB 2 — Data
 ══════════════════════════════════════════════════════════ -->
-<div id="tab-lookup-batch" class="panel">
+<div id="tab-data" class="panel">
+  <div class="sub-nav">
+    <button class="active" data-sub="leads">Leads</button>
+    <button data-sub="companies">Entreprises</button>
+    <button data-sub="interactions">Interactions</button>
+  </div>
+
+  <!-- ── Leads ── -->
+  <div id="sub-leads" class="sub-panel active">
+    <div class="card">
+      <div class="toolbar">
+        <input id="leads-q" type="text" placeholder="Rechercher par nom, entreprise, poste…" />
+        <button class="btn btn-secondary" onclick="loadLeads(1)">Rechercher</button>
+        <button class="btn btn-primary" onclick="openAddLead()">+ Ajouter</button>
+      </div>
+
+      <!-- Add form -->
+      <div class="add-section" id="add-lead-section">
+        <h3>Nouveau lead</h3>
+        <form id="form-add-lead" autocomplete="off">
+          <div class="form-grid">
+            <div><label>Prénom *</label><input id="al-first" type="text" required /></div>
+            <div><label>Nom *</label><input id="al-last" type="text" required /></div>
+            <div><label>Entreprise</label><input id="al-company" type="text" /></div>
+            <div><label>Poste</label><input id="al-job" type="text" /></div>
+            <div><label>Localisation</label><input id="al-loc" type="text" /></div>
+            <div><label>LinkedIn ID</label><input id="al-lid" type="text" /></div>
+            <div class="full"><label>LinkedIn URL</label><input id="al-lurl" type="text" /></div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <button type="button" class="btn btn-secondary" onclick="closeAddLead()">Annuler</button>
+          </div>
+          <div id="add-lead-err" class="error-msg"></div>
+        </form>
+      </div>
+
+      <hr class="sep" />
+
+      <!-- Import -->
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+        <span style="font-size:.82rem;color:var(--gray-600)">Import CSV/Excel :</span>
+        <input type="file" id="leads-import-file" accept=".csv,.xlsx,.xls" style="font-size:.82rem" />
+        <button class="btn btn-secondary btn-sm" onclick="importLeads()">Importer</button>
+        <span id="leads-import-msg" style="font-size:.82rem"></span>
+      </div>
+
+      <div id="leads-table" class="table-wrap"><div class="empty">Lancez une recherche ou chargez tous les leads.</div></div>
+      <div class="pagination" id="leads-pagination"></div>
+    </div>
+  </div>
+
+  <!-- ── Companies ── -->
+  <div id="sub-companies" class="sub-panel">
+    <div class="card">
+      <div class="toolbar">
+        <input id="co-q" type="text" placeholder="Rechercher par nom d'entreprise…" />
+        <button class="btn btn-secondary" onclick="loadCompanies(1)">Rechercher</button>
+        <button class="btn btn-primary" onclick="openAddCo()">+ Ajouter</button>
+      </div>
+
+      <div class="add-section" id="add-co-section">
+        <h3>Nouvelle entreprise</h3>
+        <form id="form-add-co" autocomplete="off">
+          <div class="form-grid">
+            <div class="full"><label>Nom *</label><input id="ac-name" type="text" required /></div>
+            <div><label>LinkedIn URL</label><input id="ac-lurl" type="text" /></div>
+            <div><label>LinkedIn ID</label><input id="ac-lid" type="text" /></div>
+            <div><label>Localisation</label><input id="ac-loc" type="text" /></div>
+            <div><label>Secteur</label><input id="ac-ind" type="text" /></div>
+            <div><label>Effectif</label><input id="ac-emp" type="number" min="0" /></div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <button type="button" class="btn btn-secondary" onclick="closeAddCo()">Annuler</button>
+          </div>
+          <div id="add-co-err" class="error-msg"></div>
+        </form>
+      </div>
+
+      <hr class="sep" />
+
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+        <span style="font-size:.82rem;color:var(--gray-600)">Import CSV/Excel :</span>
+        <input type="file" id="co-import-file" accept=".csv,.xlsx,.xls" style="font-size:.82rem" />
+        <button class="btn btn-secondary btn-sm" onclick="importCompanies()">Importer</button>
+        <span id="co-import-msg" style="font-size:.82rem"></span>
+      </div>
+
+      <div id="co-table" class="table-wrap"><div class="empty">Lancez une recherche ou chargez toutes les entreprises.</div></div>
+      <div class="pagination" id="co-pagination"></div>
+    </div>
+  </div>
+
+  <!-- ── Interactions ── -->
+  <div id="sub-interactions" class="sub-panel">
+    <div class="card">
+      <div class="toolbar">
+        <select id="int-type-f" style="width:auto">
+          <option value="">Tous types</option>
+          <option value="appel">Appel</option>
+          <option value="mail">Mail</option>
+        </select>
+        <select id="int-status-f" style="width:auto"><option value="">Tous statuts</option></select>
+        <button class="btn btn-secondary" onclick="loadInteractions(1)">Filtrer</button>
+        <button class="btn btn-primary" onclick="openAddInt()">+ Ajouter</button>
+      </div>
+
+      <div class="add-section" id="add-int-section">
+        <h3>Nouvelle interaction</h3>
+        <form id="form-add-int" autocomplete="off">
+          <div class="form-grid">
+            <div class="full"><label>Lead ID *</label><input id="ai-lead" type="text" placeholder="UUID du lead" required /></div>
+            <div>
+              <label>Type *</label>
+              <select id="ai-type"><option value="appel">Appel</option><option value="mail">Mail</option></select>
+            </div>
+            <div><label>Statut *</label><select id="ai-status"></select></div>
+            <div class="full"><label>Date / heure</label><input id="ai-ts" type="text" placeholder="2026-05-03T14:30:00" /></div>
+            <div class="full"><label>Infos</label><textarea id="ai-infos" placeholder="Notes libres…"></textarea></div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <button type="button" class="btn btn-secondary" onclick="closeAddInt()">Annuler</button>
+          </div>
+          <div id="add-int-err" class="error-msg"></div>
+        </form>
+      </div>
+
+      <div id="int-table" class="table-wrap"><div class="empty">Chargement…</div></div>
+      <div class="pagination" id="int-pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 3 — Batch Lookup
+══════════════════════════════════════════════════════════ -->
+<div id="tab-batch" class="panel">
   <div class="card">
-    <h2>Vérification en lot — CSV / Excel</h2>
-    <p style="font-size:.85rem;color:var(--gray-600);margin-bottom:1.25rem">Le fichier doit contenir des colonnes <strong>first_name</strong> et <strong>last_name</strong> (ou équivalents français). La colonne <strong>linkedin_url</strong> est optionnelle.</p>
+    <h2>Vérification en lot</h2>
+
+    <!-- Step 1 : upload -->
+    <div class="step-label">Étape 1 — Charger le fichier</div>
     <div class="dropzone" id="dropzone" onclick="document.getElementById('batch-file').click()">
-      <div class="icon">📂</div>
-      <div>Cliquez ou glissez-déposez votre fichier</div>
-      <div class="hint">.csv ou .xlsx</div>
-      <div class="filename" id="batch-filename"></div>
+      <div class="dz-icon">📂</div>
+      <div style="font-size:.88rem">Cliquez ou glissez-déposez votre fichier</div>
+      <div class="dz-hint">.csv · .xlsx · .xls</div>
+      <div class="dz-file" id="dz-filename"></div>
     </div>
     <input type="file" id="batch-file" accept=".csv,.xlsx,.xls" style="display:none" />
-    <div class="mt">
-      <button class="btn btn-primary" id="btn-batch" disabled><span id="lbl-batch">Analyser</span></button>
-      <button class="btn btn-secondary" id="btn-dl" style="display:none;margin-left:.5rem">⬇ Télécharger CSV résultat</button>
-    </div>
-    <div id="error-batch" class="error-msg"></div>
-    <div id="result-batch"></div>
-  </div>
-</div>
 
-<!-- ══════════════════════════════════════════════════════════
-     TAB 3 — Leads
-══════════════════════════════════════════════════════════ -->
-<div id="tab-leads" class="panel">
-  <div class="card">
-    <h2>Leads</h2>
-    <div class="search-row">
-      <input id="leads-q" type="text" placeholder="Rechercher par nom, entreprise, poste…" />
-      <button class="btn btn-secondary" onclick="loadLeads(1)">Rechercher</button>
-      <button class="btn btn-primary" onclick="toggleSection('add-lead-form')">+ Ajouter</button>
-    </div>
-
-    <div class="collapsible" id="add-lead-form">
-      <h3>Nouveau lead</h3>
-      <form id="form-add-lead" autocomplete="off">
-        <div class="form-grid">
-          <div><label>Prénom *</label><input id="al-first" type="text" required /></div>
-          <div><label>Nom *</label><input id="al-last" type="text" required /></div>
-          <div><label>Entreprise (nom)</label><input id="al-company" type="text" /></div>
-          <div><label>Poste</label><input id="al-job" type="text" /></div>
-          <div><label>Localisation</label><input id="al-loc" type="text" /></div>
-          <div><label>LinkedIn ID</label><input id="al-lid" type="text" /></div>
-          <div class="full-span"><label>LinkedIn URL</label><input id="al-lurl" type="text" /></div>
+    <!-- Step 2 : mapping -->
+    <div id="mapping-section" style="display:none;margin-top:1.5rem">
+      <hr class="sep" style="margin-top:0" />
+      <div class="step-label">Étape 2 — Mapper les colonnes</div>
+      <p style="font-size:.82rem;color:var(--gray-600);margin-bottom:.75rem">Associez les colonnes de votre fichier aux champs attendus.</p>
+      <div class="mapping-grid">
+        <div>
+          <label>Prénom *</label>
+          <select id="map-first"></select>
         </div>
-        <div class="mt">
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-          <button type="button" class="btn btn-secondary" style="margin-left:.5rem" onclick="toggleSection('add-lead-form')">Annuler</button>
+        <div>
+          <label>Nom *</label>
+          <select id="map-last"></select>
         </div>
-        <div id="add-lead-error" class="error-msg"></div>
-      </form>
-    </div>
-
-    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--gray-200)">
-      <h3>Import CSV / Excel</h3>
-      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-        <input type="file" id="leads-import-file" accept=".csv,.xlsx,.xls" style="font-size:.85rem" />
-        <button class="btn btn-secondary" onclick="importFile('/api/v1/leads/import','leads-import-file','leads-import-result')">Importer</button>
+        <div>
+          <label>LinkedIn URL <span class="opt-label">(optionnel)</span></label>
+          <select id="map-linkedin"></select>
+        </div>
       </div>
-      <div id="leads-import-result" style="margin-top:.5rem;font-size:.85rem;color:var(--gray-600)"></div>
     </div>
 
-    <div id="leads-table" class="table-wrap"><div class="empty">Lancez une recherche.</div></div>
-    <div class="pagination" id="leads-pagination"></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════
-     TAB 4 — Companies
-══════════════════════════════════════════════════════════ -->
-<div id="tab-companies" class="panel">
-  <div class="card">
-    <h2>Entreprises</h2>
-    <div class="search-row">
-      <input id="co-q" type="text" placeholder="Rechercher par nom d'entreprise…" />
-      <button class="btn btn-secondary" onclick="loadCompanies(1)">Rechercher</button>
-      <button class="btn btn-primary" onclick="toggleSection('add-co-form')">+ Ajouter</button>
-    </div>
-
-    <div class="collapsible" id="add-co-form">
-      <h3>Nouvelle entreprise</h3>
-      <form id="form-add-co" autocomplete="off">
-        <div class="form-grid">
-          <div class="full-span"><label>Nom *</label><input id="ac-name" type="text" required /></div>
-          <div><label>LinkedIn URL</label><input id="ac-lurl" type="text" /></div>
-          <div><label>LinkedIn ID</label><input id="ac-lid" type="text" /></div>
-          <div><label>Localisation</label><input id="ac-loc" type="text" /></div>
-          <div><label>Secteur</label><input id="ac-ind" type="text" /></div>
-          <div><label>Effectif</label><input id="ac-emp" type="number" min="0" /></div>
-        </div>
-        <div class="mt">
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-          <button type="button" class="btn btn-secondary" style="margin-left:.5rem" onclick="toggleSection('add-co-form')">Annuler</button>
-        </div>
-        <div id="add-co-error" class="error-msg"></div>
-      </form>
-    </div>
-
-    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--gray-200)">
-      <h3>Import CSV / Excel</h3>
-      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-        <input type="file" id="co-import-file" accept=".csv,.xlsx,.xls" style="font-size:.85rem" />
-        <button class="btn btn-secondary" onclick="importFile('/api/v1/companies/import','co-import-file','co-import-result')">Importer</button>
+    <!-- Step 3 : run -->
+    <div id="batch-actions" style="display:none;margin-top:1rem">
+      <hr class="sep" style="margin-top:0" />
+      <div class="step-label">Étape 3 — Lancer le lookup</div>
+      <div class="btn-row" style="margin-top:.5rem">
+        <button class="btn btn-primary" id="btn-run-batch"><span id="lbl-run-batch">Lancer le lookup</span></button>
+        <button class="btn btn-secondary" id="btn-dl-batch" style="display:none">⬇ Télécharger CSV résultat</button>
       </div>
-      <div id="co-import-result" style="margin-top:.5rem;font-size:.85rem;color:var(--gray-600)"></div>
+      <div id="batch-error" class="error-msg"></div>
     </div>
 
-    <div id="co-table" class="table-wrap"><div class="empty">Lancez une recherche.</div></div>
-    <div class="pagination" id="co-pagination"></div>
+    <div id="batch-results"></div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     TAB 5 — Interactions
+     Edit modals
 ══════════════════════════════════════════════════════════ -->
-<div id="tab-interactions" class="panel">
-  <div class="card">
-    <h2>Interactions</h2>
-    <div class="search-row">
-      <select id="int-type-filter" style="width:auto;flex:none"><option value="">Tous types</option><option value="appel">Appel</option><option value="mail">Mail</option></select>
-      <select id="int-status-filter" style="width:auto;flex:none"><option value="">Tous statuts</option></select>
-      <button class="btn btn-secondary" onclick="loadInteractions(1)">Filtrer</button>
-      <button class="btn btn-primary" onclick="toggleSection('add-int-form')">+ Ajouter</button>
-    </div>
-
-    <div class="collapsible" id="add-int-form">
-      <h3>Nouvelle interaction</h3>
-      <form id="form-add-int" autocomplete="off">
-        <div class="form-grid">
-          <div class="full-span"><label>Lead ID *</label><input id="ai-lead" type="text" placeholder="UUID du lead" required /></div>
-          <div>
-            <label>Type *</label>
-            <select id="ai-type"><option value="appel">Appel</option><option value="mail">Mail</option></select>
-          </div>
-          <div>
-            <label>Statut *</label>
-            <select id="ai-status"></select>
-          </div>
-          <div class="full-span"><label>Date / heure</label><input id="ai-ts" type="text" placeholder="2026-05-03T14:30:00" /></div>
-          <div class="full-span"><label>Infos</label><textarea id="ai-infos" placeholder="Notes libres…"></textarea></div>
-        </div>
-        <div class="mt">
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-          <button type="button" class="btn btn-secondary" style="margin-left:.5rem" onclick="toggleSection('add-int-form')">Annuler</button>
-        </div>
-        <div id="add-int-error" class="error-msg"></div>
-      </form>
-    </div>
-
-    <div id="int-table" class="table-wrap"><div class="empty">Chargement…</div></div>
-    <div class="pagination" id="int-pagination"></div>
+<!-- Lead edit -->
+<div class="modal-overlay" id="modal-lead">
+  <div class="modal">
+    <h2>Modifier le lead</h2>
+    <form id="form-edit-lead" autocomplete="off">
+      <input type="hidden" id="edit-lead-id" />
+      <div class="form-grid">
+        <div><label>Prénom *</label><input id="el-first" type="text" required /></div>
+        <div><label>Nom *</label><input id="el-last" type="text" required /></div>
+        <div><label>Entreprise</label><input id="el-company" type="text" /></div>
+        <div><label>Poste</label><input id="el-job" type="text" /></div>
+        <div><label>Localisation</label><input id="el-loc" type="text" /></div>
+        <div><label>LinkedIn ID</label><input id="el-lid" type="text" /></div>
+        <div class="full"><label>LinkedIn URL</label><input id="el-lurl" type="text" /></div>
+      </div>
+      <div id="edit-lead-err" class="error-msg"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-lead')">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
   </div>
 </div>
 
-</main>
+<!-- Company edit -->
+<div class="modal-overlay" id="modal-co">
+  <div class="modal">
+    <h2>Modifier l'entreprise</h2>
+    <form id="form-edit-co" autocomplete="off">
+      <input type="hidden" id="edit-co-id" />
+      <div class="form-grid">
+        <div class="full"><label>Nom *</label><input id="ec-name" type="text" required /></div>
+        <div><label>LinkedIn URL</label><input id="ec-lurl" type="text" /></div>
+        <div><label>LinkedIn ID</label><input id="ec-lid" type="text" /></div>
+        <div><label>Localisation</label><input id="ec-loc" type="text" /></div>
+        <div><label>Secteur</label><input id="ec-ind" type="text" /></div>
+        <div><label>Effectif</label><input id="ec-emp" type="number" min="0" /></div>
+      </div>
+      <div id="edit-co-err" class="error-msg"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-co')">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Interaction edit -->
+<div class="modal-overlay" id="modal-int">
+  <div class="modal">
+    <h2>Modifier l'interaction</h2>
+    <form id="form-edit-int" autocomplete="off">
+      <input type="hidden" id="edit-int-id" />
+      <div class="form-grid">
+        <div>
+          <label>Type *</label>
+          <select id="ei-type"><option value="appel">Appel</option><option value="mail">Mail</option></select>
+        </div>
+        <div><label>Statut *</label><select id="ei-status"></select></div>
+        <div class="full"><label>Date / heure</label><input id="ei-ts" type="text" placeholder="2026-05-03T14:30:00" /></div>
+        <div class="full"><label>Infos</label><textarea id="ei-infos"></textarea></div>
+      </div>
+      <div id="edit-int-err" class="error-msg"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-int')">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 const API = '/api/v1';
+let batchBlob = null;
+let batchFileObj = null;
+let detectedColumns = [];
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 async function apiJSON(res) {
   const ct = res.headers.get('content-type') || '';
   if (ct.includes('application/json')) return res.json();
   const text = await res.text();
-  throw new Error(`Erreur serveur (${res.status}) : ${text.slice(0, 120)}`);
+  throw new Error(`Erreur serveur (${res.status}) : ${text.slice(0, 160)}`);
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-document.querySelectorAll('nav button').forEach(btn => {
+function scoreClass(s) { return s >= .85 ? 'high' : s >= .65 ? 'medium' : 'low'; }
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Main tabs ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.main-nav button').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'leads')        loadLeads(1);
-    if (btn.dataset.tab === 'companies')    loadCompanies(1);
-    if (btn.dataset.tab === 'interactions') loadInteractions(1);
+    if (btn.dataset.tab === 'data') {
+      const activeSub = document.querySelector('.sub-nav button.active');
+      if (activeSub) triggerSubTab(activeSub.dataset.sub);
+    }
   });
 });
 
-function toggleSection(id) {
-  document.getElementById(id).classList.toggle('open');
+// ── Sub-tabs ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.sub-nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sub-nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sub-' + btn.dataset.sub).classList.add('active');
+    triggerSubTab(btn.dataset.sub);
+  });
+});
+
+function triggerSubTab(sub) {
+  if (sub === 'leads')        loadLeads(1);
+  if (sub === 'companies')    loadCompanies(1);
+  if (sub === 'interactions') loadInteractions(1);
 }
 
-function scoreClass(s) {
-  return s >= 0.85 ? 'high' : s >= 0.65 ? 'medium' : 'low';
-}
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── Lookup single ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIND LEAD
+// ══════════════════════════════════════════════════════════════════════════════
 document.getElementById('form-single').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('btn-single');
   const lbl = document.getElementById('lbl-single');
   btn.disabled = true; lbl.innerHTML = '<span class="loader"></span>';
   document.getElementById('result-single').innerHTML = '';
-
   try {
     const res = await fetch(`${API}/lookup`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        first_name: document.getElementById('s-first').value.trim(),
-        last_name:  document.getElementById('s-last').value.trim(),
+        first_name:  document.getElementById('s-first').value.trim(),
+        last_name:   document.getElementById('s-last').value.trim(),
         linkedin_url: document.getElementById('s-linkedin').value.trim() || null,
       })
     });
@@ -334,234 +547,329 @@ document.getElementById('form-single').addEventListener('submit', async e => {
       <div class="result-badge ${d.found ? 'found' : 'not-found'}">${d.found ? '✓ Lead trouvé' : '✗ Lead introuvable'}</div>`;
     if (d.found) {
       html += `<div class="score-bar-wrap">
-        <div class="score-label">Score : <strong>${pct}%</strong> <span style="color:var(--gray-400);font-size:.78rem">${d.match_type === 'linkedin_exact' ? '(LinkedIn exact)' : '(nom fuzzy)'}</span></div>
+        <div class="score-label">Score : <strong>${pct}%</strong>
+          <span style="color:var(--gray-400);font-size:.75rem;margin-left:.4rem">${d.match_type === 'linkedin_exact' ? 'LinkedIn exact' : 'fuzzy nom'}</span>
+        </div>
         <div class="score-bar"><div class="score-fill ${scoreClass(d.score)}" style="width:${pct}%"></div></div>
       </div>
       <div class="info-grid">`;
-      [['Prénom', l.first_name],['Nom', l.last_name],['Entreprise', l.company_name],['Poste', l.job_title],['Localisation', l.location],['LinkedIn', l.linkedin_url],['LinkedIn ID', l.linkedin_id],['ID', l.id]]
-        .filter(([,v]) => v)
-        .forEach(([k,v]) => { html += `<div class="info-field"><div class="key">${k}</div><div class="val">${v}</div></div>`; });
+      [['Prénom',l.first_name],['Nom',l.last_name],['Entreprise',l.company_name],['Poste',l.job_title],
+       ['Localisation',l.location],['LinkedIn',l.linkedin_url],['LinkedIn ID',l.linkedin_id],['ID',l.id]]
+        .filter(([,v])=>v)
+        .forEach(([k,v])=>{ html += `<div class="info-field"><div class="key">${esc(k)}</div><div class="val">${esc(v)}</div></div>`; });
       html += `</div>`;
     } else {
-      html += `<p style="font-size:.88rem;color:var(--gray-600);margin-top:.25rem">Aucun lead correspondant en base.</p>`;
+      html += `<p style="font-size:.85rem;color:var(--gray-600);margin-top:.2rem">Aucun lead correspondant en base.</p>`;
     }
     html += `</div>`;
     document.getElementById('result-single').innerHTML = html;
   } catch(err) {
-    document.getElementById('result-single').innerHTML = `<div class="error-msg">Erreur : ${err.message}</div>`;
+    document.getElementById('result-single').innerHTML = `<div class="error-msg">Erreur : ${esc(err.message)}</div>`;
   } finally { lbl.textContent = 'Vérifier'; btn.disabled = false; }
 });
 
-// ── Batch lookup ──────────────────────────────────────────────────────────────
-const dropzone = document.getElementById('dropzone');
-const batchFile = document.getElementById('batch-file');
-let batchBlob = null;
+// ══════════════════════════════════════════════════════════════════════════════
+// LEADS CRUD
+// ══════════════════════════════════════════════════════════════════════════════
+let leadsPage = 1;
 
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); if(e.dataTransfer.files[0]) setBatchFile(e.dataTransfer.files[0]); });
-batchFile.addEventListener('change', () => { if(batchFile.files[0]) setBatchFile(batchFile.files[0]); });
+function openAddLead()  { document.getElementById('add-lead-section').classList.add('open'); }
+function closeAddLead() { document.getElementById('add-lead-section').classList.remove('open'); document.getElementById('form-add-lead').reset(); document.getElementById('add-lead-err').textContent=''; }
 
-function setBatchFile(f) {
-  document.getElementById('batch-filename').textContent = f.name;
-  document.getElementById('btn-batch').disabled = false;
-  document.getElementById('btn-dl').style.display = 'none';
-  document.getElementById('result-batch').innerHTML = '';
-  document.getElementById('error-batch').textContent = '';
-  batchBlob = null;
-}
-
-document.getElementById('btn-batch').addEventListener('click', async () => {
-  const file = batchFile.files[0]; if(!file) return;
-  const btn = document.getElementById('btn-batch');
-  const lbl = document.getElementById('lbl-batch');
-  btn.disabled = true; lbl.innerHTML = '<span class="loader"></span>';
-  document.getElementById('error-batch').textContent = '';
-  document.getElementById('result-batch').innerHTML = '';
-  document.getElementById('btn-dl').style.display = 'none';
-  try {
-    const form = new FormData(); form.append('file', file);
-    const res = await fetch(`${API}/lookup/batch`, { method:'POST', body:form });
-    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
-    const csv = await res.text();
-    batchBlob = new Blob([csv], {type:'text/csv'});
-    document.getElementById('btn-dl').style.display = '';
-
-    const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',');
-    const fi = h => headers.indexOf(h);
-    const foundIdx = fi('found'), scoreIdx = fi('score'), matchIdx = fi('match_type');
-    const lastIdx  = headers.findIndex(h => ['last_name','nom'].includes(h.toLowerCase()));
-    const firstIdx = headers.findIndex(h => ['first_name','prenom','prénom'].includes(h.toLowerCase()));
-
-    let found = 0, notFound = 0;
-    const rows = lines.slice(1).filter(Boolean).map(l => {
-      const c = l.split(',');
-      const isF = c[foundIdx]?.toLowerCase() === 'true';
-      isF ? found++ : notFound++;
-      return { last: c[lastIdx]||'', first: c[firstIdx]||'', found: isF, score: parseFloat(c[scoreIdx]||0), match: c[matchIdx]||'' };
-    });
-
-    let html = `<div class="stats-row">
-      <div class="stat-card"><div class="n" style="color:var(--green)">${found}</div><div class="l">Trouvés</div></div>
-      <div class="stat-card"><div class="n" style="color:var(--red)">${notFound}</div><div class="l">Non trouvés</div></div>
-      <div class="stat-card"><div class="n">${rows.length}</div><div class="l">Total</div></div>
-    </div>
-    <div class="table-wrap"><table><thead><tr><th>Prénom</th><th>Nom</th><th>Trouvé</th><th>Score</th><th>Méthode</th></tr></thead><tbody>`;
-    rows.slice(0,50).forEach(r => {
-      html += `<tr><td>${r.first}</td><td>${r.last}</td><td><span class="tag ${r.found?'yes':'no'}">${r.found?'Oui':'Non'}</span></td><td>${r.found?Math.round(r.score*100)+'%':'—'}</td><td style="font-size:.78rem;color:var(--gray-400)">${r.match||'—'}</td></tr>`;
-    });
-    if(rows.length>50) html += `<tr><td colspan="5" style="text-align:center;color:var(--gray-400);font-size:.8rem">… ${rows.length-50} lignes supplémentaires dans le CSV</td></tr>`;
-    html += `</tbody></table></div>`;
-    document.getElementById('result-batch').innerHTML = html;
-  } catch(err) {
-    document.getElementById('error-batch').textContent = 'Erreur : ' + err.message;
-  } finally { lbl.textContent = 'Analyser'; btn.disabled = false; }
-});
-
-document.getElementById('btn-dl').addEventListener('click', () => {
-  if(!batchBlob) return;
-  const a = document.createElement('a'); a.href = URL.createObjectURL(batchBlob); a.download = 'lookup_result.csv'; a.click();
-});
-
-// ── Leads ─────────────────────────────────────────────────────────────────────
 async function loadLeads(page = 1) {
+  leadsPage = page;
   const q = document.getElementById('leads-q').value.trim();
-  const params = new URLSearchParams({page, page_size: 20});
-  if(q) params.append('q', q);
+  const params = new URLSearchParams({page, page_size:20});
+  if (q) params.append('q', q);
+  const wrap = document.getElementById('leads-table');
+  wrap.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const res = await fetch(`${API}/leads?${params}`);
-    const d = await apiJSON(res);
-    let html = '';
-    if(!d.items.length) { html = '<div class="empty">Aucun lead.</div>'; document.getElementById('leads-pagination').innerHTML = ''; }
-    else {
-      html = `<table><thead><tr><th>Prénom</th><th>Nom</th><th>Entreprise</th><th>Poste</th><th>Localisation</th><th>LinkedIn</th></tr></thead><tbody>`;
-      d.items.forEach(l => {
-        html += `<tr><td>${l.first_name}</td><td>${l.last_name}</td><td>${l.company_name||'—'}</td><td>${l.job_title||'—'}</td><td>${l.location||'—'}</td><td>${l.linkedin_url?`<a href="${l.linkedin_url}" target="_blank" style="color:var(--blue);font-size:.8rem">↗</a>`:'—'}</td></tr>`;
-      });
-      html += '</tbody></table>';
-      renderPagination('leads-pagination', d.total, page, d.page_size, loadLeads);
-    }
-    document.getElementById('leads-table').innerHTML = html;
-  } catch(err) { document.getElementById('leads-table').innerHTML = `<div class="error-msg">${err.message}</div>`; }
+    const d = await apiJSON(await fetch(`${API}/leads?${params}`));
+    if (!d.items.length) { wrap.innerHTML = '<div class="empty">Aucun lead.</div>'; document.getElementById('leads-pagination').innerHTML=''; return; }
+    let html = `<table><thead><tr>
+      <th>Prénom</th><th>Nom</th><th>Entreprise</th><th>Poste</th><th>Localisation</th><th>LinkedIn</th><th></th>
+    </tr></thead><tbody>`;
+    d.items.forEach(l => {
+      html += `<tr data-id="${esc(l.id)}">
+        <td>${esc(l.first_name)}</td><td>${esc(l.last_name)}</td>
+        <td>${esc(l.company_name||'—')}</td><td>${esc(l.job_title||'—')}</td>
+        <td>${esc(l.location||'—')}</td>
+        <td>${l.linkedin_url ? `<a href="${esc(l.linkedin_url)}" target="_blank" style="color:var(--blue);font-size:.78rem">↗ LinkedIn</a>` : '—'}</td>
+        <td class="actions-col">
+          <button class="btn btn-ghost btn-sm" onclick='openEditLead(${JSON.stringify(l)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLead('${esc(l.id)}')">🗑</button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    renderPagination('leads-pagination', d.total, page, d.page_size, loadLeads);
+  } catch(err) { wrap.innerHTML = `<div class="error-msg">${esc(err.message)}</div>`; }
 }
 
 document.getElementById('leads-q').addEventListener('keydown', e => { if(e.key==='Enter') loadLeads(1); });
 
 document.getElementById('form-add-lead').addEventListener('submit', async e => {
   e.preventDefault();
+  const errEl = document.getElementById('add-lead-err');
+  errEl.textContent = '';
   try {
     const res = await fetch(`${API}/leads`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         first_name:   document.getElementById('al-first').value.trim(),
         last_name:    document.getElementById('al-last').value.trim(),
-        company_name: document.getElementById('al-company').value.trim() || null,
-        job_title:    document.getElementById('al-job').value.trim() || null,
-        location:     document.getElementById('al-loc').value.trim() || null,
-        linkedin_id:  document.getElementById('al-lid').value.trim() || null,
-        linkedin_url: document.getElementById('al-lurl').value.trim() || null,
+        company_name: document.getElementById('al-company').value.trim()||null,
+        job_title:    document.getElementById('al-job').value.trim()||null,
+        location:     document.getElementById('al-loc').value.trim()||null,
+        linkedin_id:  document.getElementById('al-lid').value.trim()||null,
+        linkedin_url: document.getElementById('al-lurl').value.trim()||null,
       })
     });
-    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
-    document.getElementById('form-add-lead').reset();
-    document.getElementById('add-lead-form').classList.remove('open');
-    loadLeads(1);
-  } catch(err) { document.getElementById('add-lead-error').textContent = 'Erreur : ' + err.message; }
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    closeAddLead(); loadLeads(leadsPage);
+  } catch(err) { errEl.textContent = 'Erreur : '+err.message; }
 });
 
-// ── Companies ─────────────────────────────────────────────────────────────────
-async function loadCompanies(page = 1) {
-  const q = document.getElementById('co-q').value.trim();
-  const params = new URLSearchParams({page, page_size: 20});
-  if(q) params.append('q', q);
+function openEditLead(l) {
+  document.getElementById('edit-lead-id').value  = l.id;
+  document.getElementById('el-first').value   = l.first_name||'';
+  document.getElementById('el-last').value    = l.last_name||'';
+  document.getElementById('el-company').value = l.company_name||'';
+  document.getElementById('el-job').value     = l.job_title||'';
+  document.getElementById('el-loc').value     = l.location||'';
+  document.getElementById('el-lid').value     = l.linkedin_id||'';
+  document.getElementById('el-lurl').value    = l.linkedin_url||'';
+  document.getElementById('edit-lead-err').textContent = '';
+  openModal('modal-lead');
+}
+
+document.getElementById('form-edit-lead').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id  = document.getElementById('edit-lead-id').value;
+  const err = document.getElementById('edit-lead-err');
+  err.textContent = '';
   try {
-    const res = await fetch(`${API}/companies?${params}`);
+    const res = await fetch(`${API}/leads/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        first_name:   document.getElementById('el-first').value.trim(),
+        last_name:    document.getElementById('el-last').value.trim(),
+        company_name: document.getElementById('el-company').value.trim()||null,
+        job_title:    document.getElementById('el-job').value.trim()||null,
+        location:     document.getElementById('el-loc').value.trim()||null,
+        linkedin_id:  document.getElementById('el-lid').value.trim()||null,
+        linkedin_url: document.getElementById('el-lurl').value.trim()||null,
+      })
+    });
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    closeModal('modal-lead'); loadLeads(leadsPage);
+  } catch(err2) { err.textContent = 'Erreur : '+err2.message; }
+});
+
+async function deleteLead(id) {
+  if (!confirm('Supprimer ce lead ?')) return;
+  try {
+    const res = await fetch(`${API}/leads/${id}`, {method:'DELETE'});
+    if (res.status !== 204 && !res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    loadLeads(leadsPage);
+  } catch(err) { alert('Erreur : '+err.message); }
+}
+
+async function importLeads() {
+  const file = document.getElementById('leads-import-file').files[0];
+  if (!file) return;
+  const msg = document.getElementById('leads-import-msg');
+  msg.style.color = 'var(--gray-600)'; msg.textContent = 'Import en cours…';
+  const form = new FormData(); form.append('file', file);
+  try {
+    const res = await fetch(`${API}/leads/import`, {method:'POST',body:form});
     const d = await apiJSON(res);
-    let html = '';
-    if(!d.items.length) { html = '<div class="empty">Aucune entreprise.</div>'; document.getElementById('co-pagination').innerHTML = ''; }
-    else {
-      html = `<table><thead><tr><th>Nom</th><th>Secteur</th><th>Localisation</th><th>Effectif</th><th>LinkedIn</th></tr></thead><tbody>`;
-      d.items.forEach(c => {
-        html += `<tr><td><strong>${c.company_name}</strong></td><td>${c.industry||'—'}</td><td>${c.location||'—'}</td><td>${c.number_of_employees||'—'}</td><td>${c.linkedin_url?`<a href="${c.linkedin_url}" target="_blank" style="color:var(--blue);font-size:.8rem">↗</a>`:'—'}</td></tr>`;
-      });
-      html += '</tbody></table>';
-      renderPagination('co-pagination', d.total, page, d.page_size, loadCompanies);
-    }
-    document.getElementById('co-table').innerHTML = html;
-  } catch(err) { document.getElementById('co-table').innerHTML = `<div class="error-msg">${err.message}</div>`; }
+    if (!res.ok) throw new Error(d.detail||res.statusText);
+    msg.style.color = 'var(--green)'; msg.textContent = `✓ ${d.created} créés, ${d.skipped} ignorés, ${d.errors.length} erreurs.`;
+    loadLeads(1);
+  } catch(err) { msg.style.color='var(--red)'; msg.textContent='Erreur : '+err.message; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COMPANIES CRUD
+// ══════════════════════════════════════════════════════════════════════════════
+let companiesPage = 1;
+
+function openAddCo()  { document.getElementById('add-co-section').classList.add('open'); }
+function closeAddCo() { document.getElementById('add-co-section').classList.remove('open'); document.getElementById('form-add-co').reset(); document.getElementById('add-co-err').textContent=''; }
+
+async function loadCompanies(page = 1) {
+  companiesPage = page;
+  const q = document.getElementById('co-q').value.trim();
+  const params = new URLSearchParams({page, page_size:20});
+  if (q) params.append('q', q);
+  const wrap = document.getElementById('co-table');
+  wrap.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const d = await apiJSON(await fetch(`${API}/companies?${params}`));
+    if (!d.items.length) { wrap.innerHTML = '<div class="empty">Aucune entreprise.</div>'; document.getElementById('co-pagination').innerHTML=''; return; }
+    let html = `<table><thead><tr>
+      <th>Nom</th><th>Secteur</th><th>Localisation</th><th>Effectif</th><th>LinkedIn</th><th></th>
+    </tr></thead><tbody>`;
+    d.items.forEach(c => {
+      html += `<tr>
+        <td><strong>${esc(c.company_name)}</strong></td>
+        <td>${esc(c.industry||'—')}</td><td>${esc(c.location||'—')}</td>
+        <td>${c.number_of_employees ?? '—'}</td>
+        <td>${c.linkedin_url ? `<a href="${esc(c.linkedin_url)}" target="_blank" style="color:var(--blue);font-size:.78rem">↗</a>` : '—'}</td>
+        <td class="actions-col">
+          <button class="btn btn-ghost btn-sm" onclick='openEditCo(${JSON.stringify(c)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCo('${esc(c.id)}')">🗑</button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    renderPagination('co-pagination', d.total, page, d.page_size, loadCompanies);
+  } catch(err) { wrap.innerHTML = `<div class="error-msg">${esc(err.message)}</div>`; }
 }
 
 document.getElementById('co-q').addEventListener('keydown', e => { if(e.key==='Enter') loadCompanies(1); });
 
 document.getElementById('form-add-co').addEventListener('submit', async e => {
   e.preventDefault();
+  const errEl = document.getElementById('add-co-err');
+  errEl.textContent = '';
   try {
     const res = await fetch(`${API}/companies`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         company_name:        document.getElementById('ac-name').value.trim(),
-        linkedin_url:        document.getElementById('ac-lurl').value.trim() || null,
-        linkedin_id:         document.getElementById('ac-lid').value.trim() || null,
-        location:            document.getElementById('ac-loc').value.trim() || null,
-        industry:            document.getElementById('ac-ind').value.trim() || null,
-        number_of_employees: parseInt(document.getElementById('ac-emp').value) || null,
+        linkedin_url:        document.getElementById('ac-lurl').value.trim()||null,
+        linkedin_id:         document.getElementById('ac-lid').value.trim()||null,
+        location:            document.getElementById('ac-loc').value.trim()||null,
+        industry:            document.getElementById('ac-ind').value.trim()||null,
+        number_of_employees: parseInt(document.getElementById('ac-emp').value)||null,
       })
     });
-    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
-    document.getElementById('form-add-co').reset();
-    document.getElementById('add-co-form').classList.remove('open');
-    loadCompanies(1);
-  } catch(err) { document.getElementById('add-co-error').textContent = 'Erreur : ' + err.message; }
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    closeAddCo(); loadCompanies(companiesPage);
+  } catch(err) { errEl.textContent = 'Erreur : '+err.message; }
 });
 
-// ── Interactions ──────────────────────────────────────────────────────────────
+function openEditCo(c) {
+  document.getElementById('edit-co-id').value = c.id;
+  document.getElementById('ec-name').value = c.company_name||'';
+  document.getElementById('ec-lurl').value = c.linkedin_url||'';
+  document.getElementById('ec-lid').value  = c.linkedin_id||'';
+  document.getElementById('ec-loc').value  = c.location||'';
+  document.getElementById('ec-ind').value  = c.industry||'';
+  document.getElementById('ec-emp').value  = c.number_of_employees||'';
+  document.getElementById('edit-co-err').textContent = '';
+  openModal('modal-co');
+}
+
+document.getElementById('form-edit-co').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id  = document.getElementById('edit-co-id').value;
+  const err = document.getElementById('edit-co-err');
+  err.textContent = '';
+  try {
+    const res = await fetch(`${API}/companies/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        company_name:        document.getElementById('ec-name').value.trim(),
+        linkedin_url:        document.getElementById('ec-lurl').value.trim()||null,
+        linkedin_id:         document.getElementById('ec-lid').value.trim()||null,
+        location:            document.getElementById('ec-loc').value.trim()||null,
+        industry:            document.getElementById('ec-ind').value.trim()||null,
+        number_of_employees: parseInt(document.getElementById('ec-emp').value)||null,
+      })
+    });
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    closeModal('modal-co'); loadCompanies(companiesPage);
+  } catch(err2) { err.textContent = 'Erreur : '+err2.message; }
+});
+
+async function deleteCo(id) {
+  if (!confirm('Supprimer cette entreprise ?')) return;
+  try {
+    const res = await fetch(`${API}/companies/${id}`, {method:'DELETE'});
+    if (res.status !== 204 && !res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    loadCompanies(companiesPage);
+  } catch(err) { alert('Erreur : '+err.message); }
+}
+
+async function importCompanies() {
+  const file = document.getElementById('co-import-file').files[0];
+  if (!file) return;
+  const msg = document.getElementById('co-import-msg');
+  msg.style.color = 'var(--gray-600)'; msg.textContent = 'Import en cours…';
+  const form = new FormData(); form.append('file', file);
+  try {
+    const res = await fetch(`${API}/companies/import`, {method:'POST',body:form});
+    const d = await apiJSON(res);
+    if (!res.ok) throw new Error(d.detail||res.statusText);
+    msg.style.color = 'var(--green)'; msg.textContent = `✓ ${d.created} créées, ${d.skipped} ignorées, ${d.errors.length} erreurs.`;
+    loadCompanies(1);
+  } catch(err) { msg.style.color='var(--red)'; msg.textContent='Erreur : '+err.message; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INTERACTIONS CRUD
+// ══════════════════════════════════════════════════════════════════════════════
+let intPage = 1;
+
 async function loadInteractionMeta() {
   try {
-    const res = await fetch(`${API}/interactions/meta`);
-    const d = await res.json();
-    const statusSel = document.getElementById('int-status-filter');
-    const aiSel = document.getElementById('ai-status');
-    d.statuses.forEach(s => {
-      statusSel.innerHTML += `<option value="${s}">${s}</option>`;
-      aiSel.innerHTML += `<option value="${s}">${s}</option>`;
+    const d = await (await fetch(`${API}/interactions/meta`)).json();
+    [document.getElementById('int-status-f'),
+     document.getElementById('ai-status'),
+     document.getElementById('ei-status')].forEach(sel => {
+      d.statuses.forEach(s => { sel.innerHTML += `<option value="${esc(s)}">${esc(s)}</option>`; });
     });
   } catch {}
 }
 loadInteractionMeta();
 
+function openAddInt()  { document.getElementById('add-int-section').classList.add('open'); }
+function closeAddInt() { document.getElementById('add-int-section').classList.remove('open'); document.getElementById('form-add-int').reset(); document.getElementById('add-int-err').textContent=''; }
+
 async function loadInteractions(page = 1) {
-  const type   = document.getElementById('int-type-filter').value;
-  const status = document.getElementById('int-status-filter').value;
-  const params = new URLSearchParams({page, page_size: 20});
-  if(type)   params.append('type', type);
-  if(status) params.append('status', status);
+  intPage = page;
+  const type   = document.getElementById('int-type-f').value;
+  const status = document.getElementById('int-status-f').value;
+  const params = new URLSearchParams({page, page_size:20});
+  if (type)   params.append('type', type);
+  if (status) params.append('status', status);
+  const wrap = document.getElementById('int-table');
+  wrap.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const res = await fetch(`${API}/interactions?${params}`);
-    const d = await apiJSON(res);
-    let html = '';
-    if(!d.items.length) { html = '<div class="empty">Aucune interaction.</div>'; document.getElementById('int-pagination').innerHTML = ''; }
-    else {
-      html = `<table><thead><tr><th>Lead ID</th><th>Type</th><th>Statut</th><th>Date</th><th>Infos</th></tr></thead><tbody>`;
-      d.items.forEach(i => {
-        const ts = i.timestamp ? new Date(i.timestamp).toLocaleString('fr-FR') : '—';
-        html += `<tr>
-          <td style="font-size:.78rem;color:var(--gray-400)">${i.lead_id.slice(0,8)}…</td>
-          <td><span class="tag ${i.type}">${i.type}</span></td>
-          <td><span class="badge-status">${i.status}</span></td>
-          <td style="font-size:.82rem">${ts}</td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.infos||'—'}</td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      renderPagination('int-pagination', d.total, page, d.page_size, loadInteractions);
-    }
-    document.getElementById('int-table').innerHTML = html;
-  } catch(err) { document.getElementById('int-table').innerHTML = `<div class="error-msg">${err.message}</div>`; }
+    const d = await apiJSON(await fetch(`${API}/interactions?${params}`));
+    if (!d.items.length) { wrap.innerHTML = '<div class="empty">Aucune interaction.</div>'; document.getElementById('int-pagination').innerHTML=''; return; }
+    let html = `<table><thead><tr>
+      <th>Lead ID</th><th>Type</th><th>Statut</th><th>Date</th><th>Infos</th><th></th>
+    </tr></thead><tbody>`;
+    d.items.forEach(i => {
+      const ts = i.timestamp ? new Date(i.timestamp).toLocaleString('fr-FR') : '—';
+      html += `<tr>
+        <td style="font-size:.76rem;color:var(--gray-400)">${esc(i.lead_id.slice(0,8))}…</td>
+        <td><span class="tag ${esc(i.type)}">${esc(i.type)}</span></td>
+        <td><span class="badge">${esc(i.status)}</span></td>
+        <td style="font-size:.8rem;white-space:nowrap">${ts}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem">${esc(i.infos||'—')}</td>
+        <td class="actions-col">
+          <button class="btn btn-ghost btn-sm" onclick='openEditInt(${JSON.stringify(i)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteInt('${esc(i.id)}')">🗑</button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    renderPagination('int-pagination', d.total, page, d.page_size, loadInteractions);
+  } catch(err) { wrap.innerHTML = `<div class="error-msg">${esc(err.message)}</div>`; }
 }
 
 document.getElementById('form-add-int').addEventListener('submit', async e => {
   e.preventDefault();
+  const errEl = document.getElementById('add-int-err');
+  errEl.textContent = '';
   try {
     const ts = document.getElementById('ai-ts').value.trim();
     const res = await fetch(`${API}/interactions`, {
@@ -570,37 +878,201 @@ document.getElementById('form-add-int').addEventListener('submit', async e => {
         lead_id:   document.getElementById('ai-lead').value.trim(),
         type:      document.getElementById('ai-type').value,
         status:    document.getElementById('ai-status').value,
-        timestamp: ts || null,
-        infos:     document.getElementById('ai-infos').value.trim() || null,
+        timestamp: ts||null,
+        infos:     document.getElementById('ai-infos').value.trim()||null,
       })
     });
-    if(!res.ok) { const e = await apiJSON(res); throw new Error(e.detail || res.statusText); }
-    document.getElementById('form-add-int').reset();
-    document.getElementById('add-int-form').classList.remove('open');
-    loadInteractions(1);
-  } catch(err) { document.getElementById('add-int-error').textContent = 'Erreur : ' + err.message; }
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    closeAddInt(); loadInteractions(intPage);
+  } catch(err) { errEl.textContent = 'Erreur : '+err.message; }
 });
 
-// ── Import helper ─────────────────────────────────────────────────────────────
-async function importFile(endpoint, fileInputId, resultId) {
-  const file = document.getElementById(fileInputId).files[0];
-  if(!file) return;
-  const form = new FormData(); form.append('file', file);
-  try {
-    const res = await fetch(endpoint, {method:'POST', body:form});
-    const d = await apiJSON(res);
-    if(!res.ok) throw new Error(d.detail || res.statusText);
-    document.getElementById(resultId).textContent = `✓ ${d.created} créés, ${d.skipped} ignorés, ${d.errors.length} erreurs sur ${d.total_rows} lignes.`;
-  } catch(err) { document.getElementById(resultId).textContent = 'Erreur : ' + err.message; }
+function openEditInt(i) {
+  document.getElementById('edit-int-id').value = i.id;
+  document.getElementById('ei-type').value   = i.type||'appel';
+  document.getElementById('ei-status').value = i.status||'';
+  document.getElementById('ei-ts').value     = i.timestamp ? i.timestamp.slice(0,19) : '';
+  document.getElementById('ei-infos').value  = i.infos||'';
+  document.getElementById('edit-int-err').textContent = '';
+  openModal('modal-int');
 }
 
-// ── Pagination helper ─────────────────────────────────────────────────────────
-function renderPagination(containerId, total, page, page_size, loadFn) {
-  const totalPages = Math.ceil(total / page_size);
-  let html = `<span>${total} enregistrement${total>1?'s':''}</span>`;
-  if(page > 1) html += `<button class="btn btn-secondary" onclick="${loadFn.name}(${page-1})">← Préc.</button>`;
-  html += `<span>Page ${page} / ${totalPages}</span>`;
-  if(page < totalPages) html += `<button class="btn btn-secondary" onclick="${loadFn.name}(${page+1})">Suiv. →</button>`;
+document.getElementById('form-edit-int').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id  = document.getElementById('edit-int-id').value;
+  const err = document.getElementById('edit-int-err');
+  err.textContent = '';
+  try {
+    const ts = document.getElementById('ei-ts').value.trim();
+    const res = await fetch(`${API}/interactions/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        type:      document.getElementById('ei-type').value,
+        status:    document.getElementById('ei-status').value,
+        timestamp: ts||null,
+        infos:     document.getElementById('ei-infos').value.trim()||null,
+      })
+    });
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    closeModal('modal-int'); loadInteractions(intPage);
+  } catch(err2) { err.textContent = 'Erreur : '+err2.message; }
+});
+
+async function deleteInt(id) {
+  if (!confirm('Supprimer cette interaction ?')) return;
+  try {
+    const res = await fetch(`${API}/interactions/${id}`, {method:'DELETE'});
+    if (res.status !== 204 && !res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    loadInteractions(intPage);
+  } catch(err) { alert('Erreur : '+err.message); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BATCH LOOKUP
+// ══════════════════════════════════════════════════════════════════════════════
+const dropzone = document.getElementById('dropzone');
+const batchFileInput = document.getElementById('batch-file');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setBatchFile(e.dataTransfer.files[0]);
+});
+batchFileInput.addEventListener('change', () => { if (batchFileInput.files[0]) setBatchFile(batchFileInput.files[0]); });
+
+async function setBatchFile(file) {
+  batchFileObj = file;
+  batchBlob = null;
+  document.getElementById('dz-filename').textContent = file.name;
+  document.getElementById('mapping-section').style.display = 'none';
+  document.getElementById('batch-actions').style.display = 'none';
+  document.getElementById('batch-results').innerHTML = '';
+  document.getElementById('btn-dl-batch').style.display = 'none';
+  document.getElementById('batch-error').textContent = '';
+
+  // Fetch columns from backend
+  try {
+    const form = new FormData(); form.append('file', file);
+    const res = await fetch(`${API}/lookup/columns`, {method:'POST', body:form});
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    const d = await apiJSON(res);
+    detectedColumns = d.columns;
+    buildMappingUI(detectedColumns);
+    document.getElementById('mapping-section').style.display = '';
+    document.getElementById('batch-actions').style.display = '';
+  } catch(err) {
+    document.getElementById('batch-error').textContent = 'Impossible de lire le fichier : ' + err.message;
+  }
+}
+
+function buildMappingUI(cols) {
+  const noneOpt = '<option value="">— Ignorer —</option>';
+  ['map-first','map-last','map-linkedin'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = noneOpt + cols.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  });
+
+  // Auto-select common aliases
+  function autoSelect(selId, ...aliases) {
+    const sel = document.getElementById(selId);
+    for (const alias of aliases) {
+      const opt = [...sel.options].find(o => o.value.toLowerCase().trim() === alias);
+      if (opt) { sel.value = opt.value; return; }
+    }
+  }
+  autoSelect('map-first', 'first_name','prénom','prenom','firstname','first name');
+  autoSelect('map-last',  'last_name','nom','lastname','surname','last name');
+  autoSelect('map-linkedin', 'linkedin_url','linkedin','linkedin url');
+}
+
+document.getElementById('btn-run-batch').addEventListener('click', async () => {
+  if (!batchFileObj) return;
+  const btn = document.getElementById('btn-run-batch');
+  const lbl = document.getElementById('lbl-run-batch');
+  const errEl = document.getElementById('batch-error');
+  btn.disabled = true; lbl.innerHTML = '<span class="loader"></span> Analyse…';
+  errEl.textContent = '';
+  document.getElementById('batch-results').innerHTML = '';
+  document.getElementById('btn-dl-batch').style.display = 'none';
+  batchBlob = null;
+
+  try {
+    const colFirst   = document.getElementById('map-first').value;
+    const colLast    = document.getElementById('map-last').value;
+    const colLinkedin = document.getElementById('map-linkedin').value;
+
+    if (!colFirst || !colLast) throw new Error('Veuillez mapper les colonnes Prénom et Nom.');
+
+    const form = new FormData();
+    form.append('file', batchFileObj);
+    form.append('col_first_name',   colFirst);
+    form.append('col_last_name',    colLast);
+    form.append('col_linkedin_url', colLinkedin);
+
+    const res = await fetch(`${API}/lookup/batch`, {method:'POST', body:form});
+    if (!res.ok) { const e=await apiJSON(res); throw new Error(e.detail||res.statusText); }
+    const csv = await res.text();
+    batchBlob = new Blob([csv], {type:'text/csv'});
+    document.getElementById('btn-dl-batch').style.display = '';
+
+    // Parse for stats + preview
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',');
+    const idx = k => headers.findIndex(h => h.toLowerCase().trim() === k);
+    const foundIdx = idx('found'), scoreIdx = idx('score'), matchIdx = idx('match_type');
+    const lastIdx  = headers.findIndex(h => [colLast.toLowerCase(),'last_name','nom'].includes(h.toLowerCase().trim()));
+    const firstIdx = headers.findIndex(h => [colFirst.toLowerCase(),'first_name','prénom','prenom'].includes(h.toLowerCase().trim()));
+
+    let found = 0, notFound = 0;
+    const rows = lines.slice(1).filter(Boolean).map(line => {
+      const c = line.split(',');
+      const isF = c[foundIdx]?.trim().toLowerCase() === 'true';
+      isF ? found++ : notFound++;
+      return {last:c[lastIdx]||'', first:c[firstIdx]||'', found:isF, score:parseFloat(c[scoreIdx]||0), match:c[matchIdx]||''};
+    });
+
+    let html = `<div class="stats-row" style="margin-bottom:1.25rem">
+      <div class="stat-box"><div class="n" style="color:var(--green)">${found}</div><div class="l">Trouvés</div></div>
+      <div class="stat-box"><div class="n" style="color:var(--red)">${notFound}</div><div class="l">Non trouvés</div></div>
+      <div class="stat-box"><div class="n">${rows.length}</div><div class="l">Total</div></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Prénom</th><th>Nom</th><th>Trouvé</th><th>Score</th><th>Méthode</th>
+    </tr></thead><tbody>`;
+    rows.slice(0,50).forEach(r => {
+      html += `<tr>
+        <td>${esc(r.first)}</td><td>${esc(r.last)}</td>
+        <td><span class="tag ${r.found?'yes':'no'}">${r.found?'Oui':'Non'}</span></td>
+        <td>${r.found ? Math.round(r.score*100)+'%' : '—'}</td>
+        <td style="font-size:.76rem;color:var(--gray-400)">${esc(r.match||'—')}</td>
+      </tr>`;
+    });
+    if (rows.length > 50) html += `<tr><td colspan="5" style="text-align:center;color:var(--gray-400);font-size:.78rem">… ${rows.length-50} lignes supplémentaires dans le CSV</td></tr>`;
+    html += `</tbody></table></div>`;
+    document.getElementById('batch-results').innerHTML = html;
+  } catch(err) {
+    errEl.textContent = 'Erreur : '+err.message;
+  } finally { lbl.textContent = 'Lancer le lookup'; btn.disabled = false; }
+});
+
+document.getElementById('btn-dl-batch').addEventListener('click', () => {
+  if (!batchBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(batchBlob);
+  a.download = 'lookup_result.csv';
+  a.click();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PAGINATION
+// ══════════════════════════════════════════════════════════════════════════════
+function renderPagination(containerId, total, page, pageSize, loadFn) {
+  const totalPages = Math.ceil(total / pageSize);
+  let html = `<span>${total} enreg.</span>`;
+  if (page > 1) html += `<button class="btn btn-secondary btn-sm" onclick="${loadFn.name}(${page-1})">← Préc.</button>`;
+  html += `<span>${page} / ${totalPages}</span>`;
+  if (page < totalPages) html += `<button class="btn btn-secondary btn-sm" onclick="${loadFn.name}(${page+1})">Suiv. →</button>`;
   document.getElementById(containerId).innerHTML = html;
 }
 </script>
