@@ -19,7 +19,7 @@ def upgrade() -> None:
 
     # ── Companies ────────────────────────────────────────────────────────────────
     op.execute("""
-        CREATE TABLE companies (
+        CREATE TABLE IF NOT EXISTS companies (
             id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             company_name        TEXT NOT NULL,
             linkedin_url        TEXT UNIQUE,
@@ -32,11 +32,11 @@ def upgrade() -> None:
         )
     """)
 
-    op.execute("CREATE INDEX idx_companies_name ON companies USING GIN (lower(company_name) gin_trgm_ops)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_companies_name ON companies USING GIN (lower(company_name) gin_trgm_ops)")
 
     # ── Leads ─────────────────────────────────────────────────────────────────────
     op.execute("""
-        CREATE TABLE leads (
+        CREATE TABLE IF NOT EXISTS leads (
             id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             last_name               TEXT NOT NULL,
             first_name              TEXT NOT NULL,
@@ -54,14 +54,14 @@ def upgrade() -> None:
         )
     """)
 
-    op.execute("CREATE INDEX idx_leads_last_name_trgm  ON leads USING GIN (last_name_normalized gin_trgm_ops)")
-    op.execute("CREATE INDEX idx_leads_first_name_trgm ON leads USING GIN (first_name_normalized gin_trgm_ops)")
-    op.execute("CREATE INDEX idx_leads_linkedin        ON leads (linkedin_url) WHERE linkedin_url IS NOT NULL")
-    op.execute("CREATE INDEX idx_leads_company_id      ON leads (company_id) WHERE company_id IS NOT NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_leads_last_name_trgm  ON leads USING GIN (last_name_normalized gin_trgm_ops)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_leads_first_name_trgm ON leads USING GIN (first_name_normalized gin_trgm_ops)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_leads_linkedin        ON leads (linkedin_url) WHERE linkedin_url IS NOT NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_leads_company_id      ON leads (company_id) WHERE company_id IS NOT NULL")
 
     # ── Interactions ──────────────────────────────────────────────────────────────
     op.execute("""
-        CREATE TABLE interactions (
+        CREATE TABLE IF NOT EXISTS interactions (
             id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             lead_id     UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
             type        TEXT NOT NULL CHECK (type IN ('appel', 'mail')),
@@ -76,8 +76,8 @@ def upgrade() -> None:
         )
     """)
 
-    op.execute("CREATE INDEX idx_interactions_lead_id ON interactions (lead_id)")
-    op.execute("CREATE INDEX idx_interactions_status  ON interactions (status)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_interactions_lead_id ON interactions (lead_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_interactions_status  ON interactions (status)")
 
 
 def downgrade() -> None:
