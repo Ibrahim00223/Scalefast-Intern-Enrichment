@@ -21,8 +21,39 @@ def _read_file(content: bytes, filename: str) -> pd.DataFrame:
         raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportés.")
 
 
-@router.post("", response_model=LookupResult)
+@router.post(
+    "",
+    response_model=LookupResult,
+    summary="Vérification unitaire d'un lead",
+    responses={
+        200: {"description": "Résultat de la vérification (lead trouvé ou non)."},
+    },
+)
 async def lookup_single(body: LookupRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Vérifie si un lead existe en base à partir de son **prénom**, **nom** et optionnellement
+    son **URL LinkedIn**.
+
+    ### Logique de matching (deux passes)
+
+    1. **LinkedIn exact** — si une URL LinkedIn est fournie, une correspondance exacte est
+       d'abord recherchée après normalisation de l'URL. Si trouvée → `score = 1.0`,
+       `match_type = "linkedin_exact"`.
+
+    2. **Fuzzy nom + prénom** — si pas de match LinkedIn, une recherche fuzzy est lancée
+       via `pg_trgm` (seuil : `similarity > 0.55` sur **nom ET prénom**), puis les candidats
+       sont re-scorés avec `rapidfuzz.token_sort_ratio`. Le meilleur score est retourné.
+       `match_type = "name_fuzzy"`.
+
+    ### Valeurs du score
+
+    | Score | Interprétation |
+    |-------|---------------|
+    | `1.0` | Correspondance LinkedIn exacte |
+    | `0.85–0.99` | Très forte correspondance fuzzy |
+    | `0.65–0.84` | Correspondance probable |
+    | `< 0.55` | En dessous du seuil — retourné comme non trouvé |
+    """
     return await lookup_lead(
         first_name=body.first_name,
         last_name=body.last_name,
@@ -31,26 +62,96 @@ async def lookup_single(body: LookupRequest, db: AsyncSession = Depends(get_db))
     )
 
 
-@router.post("/columns")
-async def get_columns(file: UploadFile = File(...)):
-    """Return the list of columns detected in a CSV or Excel file."""
+@router.post(
+    "/columns",
+    summary="Détecter les colonnes d'un fichier",
+    responses={
+        200: {"description": "Liste des noms de colonnes détectés dans le fichier."},
+        400: {"description": "Format de fichier non supporté."},
+    },
+)
+async def get_columns(file: UploadFile = File(..., description="Fichier CSV ou Excel (.xlsx/.xls) à analyser.")):
+    """
+    Retourne la liste des colonnes détectées dans un fichier CSV ou Excel,
+    sans effectuer aucune vérification en base.
+
+    Utilisé par l'interface pour alimenter le sélecteur de mapping de colonnes
+    avant de lancer un lookup batch.
+
+    ### Formats supportés
+    - `.csv` (encodage UTF-8 recommandé)
+    - `.xlsx` / `.xls`
+
+    ### Exemple de réponse
+    ```json
+    { "columns": ["Prénom", "Nom", "Entreprise", "LinkedIn URL", "Poste"] }
+    ```
+    """
     content = await file.read()
     df = _read_file(content, file.filename or "")
     return {"columns": list(df.columns)}
 
 
-@router.post("/batch")
+@router.post(
+    "/batch",
+    summary="Vérification en lot (CSV / Excel)",
+    responses={
+        200: {"description": "Fichier CSV résultat avec les colonnes `found`, `score`, `match_type`, `matched_lead_id` ajoutées."},
+        400: {"description": "Format de fichier non supporté."},
+        422: {"description": "Colonnes `first_name` / `last_name` introuvables dans le fichier."},
+    },
+)
 async def lookup_batch(
-    file: UploadFile = File(...),
-    col_first_name: str = Form(""),
-    col_last_name: str = Form(""),
-    col_linkedin_url: str = Form(""),
+    file: UploadFile = File(..., description="Fichier CSV ou Excel contenant les contacts à vérifier."),
+    col_first_name: str = Form(
+        "",
+        description=(
+            "Nom exact de la colonne contenant les prénoms. "
+            "Si vide, l'endpoint tente de détecter automatiquement parmi : "
+            "`first_name`, `prenom`, `prénom`, `firstname`, `first name`."
+        ),
+    ),
+    col_last_name: str = Form(
+        "",
+        description=(
+            "Nom exact de la colonne contenant les noms. "
+            "Si vide, détection automatique parmi : "
+            "`last_name`, `nom`, `lastname`, `surname`, `last name`."
+        ),
+    ),
+    col_linkedin_url: str = Form(
+        "",
+        description=(
+            "Nom exact de la colonne contenant les URLs LinkedIn (optionnel). "
+            "Si vide, détection automatique parmi : `linkedin_url`, `linkedin`, `linkedin url`."
+        ),
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Batch lookup. Column names can be passed explicitly via form fields
-    (col_first_name, col_last_name, col_linkedin_url). If omitted, the
-    endpoint falls back to common aliases.
+    Vérifie en masse l'existence de leads à partir d'un fichier CSV ou Excel.
+
+    ### Étapes
+
+    1. Uploader le fichier via `POST /lookup/columns` pour récupérer les noms de colonnes.
+    2. Sélectionner les colonnes prénom, nom et LinkedIn URL.
+    3. Appeler cet endpoint avec le fichier + les paramètres de mapping.
+
+    ### Résultat
+
+    Le fichier original est retourné en CSV avec **4 colonnes ajoutées** en fin de fichier :
+
+    | Colonne | Type | Description |
+    |---------|------|-------------|
+    | `found` | bool | `True` si un lead correspondant a été trouvé |
+    | `score` | float | Score de correspondance (0.0–1.0) |
+    | `match_type` | str | `linkedin_exact`, `name_fuzzy` ou vide |
+    | `matched_lead_id` | UUID | ID du lead trouvé en base |
+
+    ### Performances
+
+    Chaque ligne génère 1–2 requêtes SQL. Pour des fichiers très larges (> 5 000 lignes),
+    prévoir un temps de traitement proportionnel.
     """
     content = await file.read()
     df = _read_file(content, file.filename or "")
@@ -65,21 +166,23 @@ async def lookup_batch(
                 return cols_lower[k]
         return None
 
-    last_col = find_col(col_last_name, "last_name", "nom", "last name", "lastname", "surname")
-    first_col = find_col(col_first_name, "first_name", "prenom", "prénom", "first name", "firstname")
+    last_col    = find_col(col_last_name,    "last_name", "nom", "last name", "lastname", "surname")
+    first_col   = find_col(col_first_name,   "first_name", "prenom", "prénom", "first name", "firstname")
     linkedin_col = find_col(col_linkedin_url, "linkedin_url", "linkedin", "linkedin url")
 
     if not last_col or not first_col:
         raise HTTPException(
             status_code=422,
-            detail=f"Colonnes 'last_name' et 'first_name' introuvables. "
-                   f"Colonnes détectées : {list(df.columns)}"
+            detail=(
+                f"Colonnes 'last_name' et 'first_name' introuvables. "
+                f"Colonnes détectées : {list(df.columns)}"
+            ),
         )
 
     rows: list[BatchLookupRow] = []
     for i, row in df.iterrows():
-        last = row.get(last_col) or ""
-        first = row.get(first_col) or ""
+        last    = row.get(last_col) or ""
+        first   = row.get(first_col) or ""
         linkedin = row.get(linkedin_col) if linkedin_col else None
 
         if not last or not first:
@@ -98,9 +201,9 @@ async def lookup_batch(
         ))
 
     out_df = df.copy()
-    out_df["found"] = [r.found for r in rows]
-    out_df["score"] = [r.score for r in rows]
-    out_df["match_type"] = [r.match_type or "" for r in rows]
+    out_df["found"]           = [r.found for r in rows]
+    out_df["score"]           = [r.score for r in rows]
+    out_df["match_type"]      = [r.match_type or "" for r in rows]
     out_df["matched_lead_id"] = [str(r.matched_lead_id) if r.matched_lead_id else "" for r in rows]
 
     buf = io.StringIO()

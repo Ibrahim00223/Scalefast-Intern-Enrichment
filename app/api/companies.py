@@ -14,8 +14,22 @@ from app.services.normalization import normalize_linkedin_url
 router = APIRouter(prefix="/companies", tags=["companies"])
 
 
-@router.post("", response_model=CompanyOut, status_code=201)
+@router.post(
+    "",
+    response_model=CompanyOut,
+    status_code=201,
+    summary="Créer une entreprise",
+    responses={
+        201: {"description": "Entreprise créée avec succès."},
+        409: {"description": "Une entreprise avec cette URL LinkedIn existe déjà."},
+    },
+)
 async def create_company(body: CompanyCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Crée une nouvelle entreprise en base.
+
+    L'URL LinkedIn est normalisée automatiquement. Si fournie, elle doit être unique.
+    """
     linkedin = normalize_linkedin_url(body.linkedin_url)
     company = Company(
         company_name=body.company_name,
@@ -29,19 +43,30 @@ async def create_company(body: CompanyCreate, db: AsyncSession = Depends(get_db)
     try:
         await db.commit()
         await db.refresh(company)
-    except Exception:
+    except Exception as exc:
         await db.rollback()
-        raise HTTPException(status_code=409, detail="A company with this LinkedIn URL already exists.")
+        msg = str(exc)
+        if "linkedin_url" in msg or "unique" in msg.lower():
+            raise HTTPException(status_code=409, detail="Une entreprise avec cette URL LinkedIn existe déjà.")
+        raise HTTPException(status_code=500, detail=f"Erreur base de données : {msg[:200]}")
     return company
 
 
-@router.get("", response_model=CompanyListOut)
+@router.get(
+    "",
+    response_model=CompanyListOut,
+    summary="Lister les entreprises",
+)
 async def list_companies(
-    q: str | None = Query(None, description="Search by company name"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    q: str | None = Query(
+        None,
+        description="Recherche par nom d'entreprise (`ILIKE %q%`). Exemple : `scalefast`.",
+    ),
+    page: int = Query(1, ge=1, description="Numéro de page (commence à 1)."),
+    page_size: int = Query(20, ge=1, le=100, description="Résultats par page (max 100)."),
     db: AsyncSession = Depends(get_db),
 ):
+    """Retourne la liste paginée des entreprises, avec filtre optionnel par nom."""
     stmt = select(Company)
     if q:
         stmt = stmt.where(Company.company_name.ilike(f"%{q}%"))
@@ -51,19 +76,41 @@ async def list_companies(
     return CompanyListOut(total=total, page=page, page_size=page_size, items=list(items))
 
 
-@router.get("/{company_id}", response_model=CompanyOut)
+@router.get(
+    "/{company_id}",
+    response_model=CompanyOut,
+    summary="Récupérer une entreprise par ID",
+    responses={
+        200: {"description": "Fiche complète de l'entreprise."},
+        404: {"description": "Entreprise introuvable."},
+    },
+)
 async def get_company(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Retourne la fiche complète d'une entreprise à partir de son UUID."""
     company = await db.get(Company, company_id)
     if not company:
-        raise HTTPException(status_code=404, detail="Company not found.")
+        raise HTTPException(status_code=404, detail="Entreprise introuvable.")
     return company
 
 
-@router.patch("/{company_id}", response_model=CompanyOut)
+@router.patch(
+    "/{company_id}",
+    response_model=CompanyOut,
+    summary="Mettre à jour une entreprise",
+    responses={
+        200: {"description": "Entreprise mise à jour."},
+        404: {"description": "Entreprise introuvable."},
+    },
+)
 async def update_company(company_id: uuid.UUID, body: CompanyUpdate, db: AsyncSession = Depends(get_db)):
+    """
+    Met à jour partiellement une entreprise (seuls les champs fournis sont modifiés).
+
+    L'URL LinkedIn est normalisée si fournie.
+    """
     company = await db.get(Company, company_id)
     if not company:
-        raise HTTPException(status_code=404, detail="Company not found.")
+        raise HTTPException(status_code=404, detail="Entreprise introuvable.")
     for field, value in body.model_dump(exclude_unset=True).items():
         if field == "linkedin_url":
             value = normalize_linkedin_url(value)
@@ -73,17 +120,56 @@ async def update_company(company_id: uuid.UUID, body: CompanyUpdate, db: AsyncSe
     return company
 
 
-@router.delete("/{company_id}", status_code=204)
+@router.delete(
+    "/{company_id}",
+    status_code=204,
+    summary="Supprimer une entreprise",
+    responses={
+        204: {"description": "Entreprise supprimée. Les leads rattachés ont leur `company_id` mis à NULL."},
+        404: {"description": "Entreprise introuvable."},
+    },
+)
 async def delete_company(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """
+    Supprime une entreprise. Les leads qui y étaient rattachés conservent leur `company_name`
+    mais leur `company_id` est mis à `NULL` (contrainte `ON DELETE SET NULL`).
+    """
     company = await db.get(Company, company_id)
     if not company:
-        raise HTTPException(status_code=404, detail="Company not found.")
+        raise HTTPException(status_code=404, detail="Entreprise introuvable.")
     await db.delete(company)
     await db.commit()
 
 
-@router.post("/import", status_code=200)
-async def import_companies(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+@router.post(
+    "/import",
+    status_code=200,
+    summary="Importer des entreprises depuis un fichier",
+    responses={
+        200: {"description": "Rapport d'import."},
+        400: {"description": "Format de fichier non supporté."},
+    },
+)
+async def import_companies(
+    file: UploadFile = File(..., description="Fichier CSV ou Excel contenant les entreprises à importer."),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Importe des entreprises en masse depuis un fichier CSV ou Excel.
+
+    ### Colonnes reconnues automatiquement
+
+    | Champ | Alias acceptés |
+    |-------|---------------|
+    | `company_name` | `company`, `entreprise`, `société`, `name` |
+    | `linkedin_url` | `linkedin` |
+    | `linkedin_id` | — |
+    | `location` | `localisation` |
+    | `industry` | `secteur` |
+    | `number_of_employees` | `employees`, `effectif` |
+
+    Les lignes sans `company_name` sont ignorées.
+    """
     content = await file.read()
     filename = file.filename or ""
     if filename.endswith(".csv"):
@@ -91,7 +177,7 @@ async def import_companies(file: UploadFile = File(...), db: AsyncSession = Depe
     elif filename.endswith((".xlsx", ".xls")):
         df = pd.read_excel(io.BytesIO(content), dtype=str)
     else:
-        raise HTTPException(status_code=400, detail="Only .csv and .xlsx/.xls files are supported.")
+        raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportés.")
 
     df = df.where(pd.notnull(df), None)
     cols = {c.lower().strip(): c for c in df.columns}
