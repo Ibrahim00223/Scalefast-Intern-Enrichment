@@ -19,6 +19,9 @@
     header { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 2rem; display:flex; align-items:center; gap:1rem; height:54px; }
     .logo { font-weight:700; font-size:1.05rem; color:var(--blue); letter-spacing:-.02em; }
     .logo-sub { color:var(--gray-400); font-size:.8rem; }
+    .header-spacer { flex:1; }
+    .api-docs-link { display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .85rem; border:1px solid var(--gray-200); border-radius:6px; font-size:.8rem; color:var(--gray-600); text-decoration:none; font-weight:500; transition:border-color .15s,color .15s,background .15s; }
+    .api-docs-link:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-lt); }
 
     /* ── Main tabs ── */
     .main-nav { display:flex; gap:0; padding:0 2rem; background:#fff; border-bottom:1px solid var(--gray-200); }
@@ -156,6 +159,8 @@
 <header>
   <span class="logo">Intern Enrichment</span>
   <span class="logo-sub">Scalefast</span>
+  <span class="header-spacer"></span>
+  <a href="/docs" target="_blank" class="api-docs-link">📄 API Docs</a>
 </header>
 
 <nav class="main-nav">
