@@ -53,6 +53,20 @@ async def lookup_single(body: LookupRequest, db: AsyncSession = Depends(get_db))
     | `0.85–0.99` | Très forte correspondance fuzzy |
     | `0.65–0.84` | Correspondance probable |
     | `< 0.55` | En dessous du seuil — retourné comme non trouvé |
+
+    ### cURL
+
+    ```bash
+    # Lookup avec LinkedIn URL
+    curl -X POST "{{BASE_URL}}/api/v1/lookup" \\
+      -H "Content-Type: application/json" \\
+      -d '{"first_name":"Jean","last_name":"Dupont","linkedin_url":"https://www.linkedin.com/in/jeandupont"}'
+
+    # Lookup nom + prénom uniquement
+    curl -X POST "{{BASE_URL}}/api/v1/lookup" \\
+      -H "Content-Type: application/json" \\
+      -d '{"first_name":"Jean","last_name":"Dupont"}'
+    ```
     """
     return await lookup_lead(
         first_name=body.first_name,
@@ -85,6 +99,12 @@ async def get_columns(file: UploadFile = File(..., description="Fichier CSV ou E
     ### Exemple de réponse
     ```json
     { "columns": ["Prénom", "Nom", "Entreprise", "LinkedIn URL", "Poste"] }
+    ```
+
+    ### cURL
+    ```bash
+    curl -X POST "{{BASE_URL}}/api/v1/lookup/columns" \\
+      -F "file=@/chemin/vers/contacts.csv"
     ```
     """
     content = await file.read()
@@ -152,6 +172,22 @@ async def lookup_batch(
 
     Chaque ligne génère 1–2 requêtes SQL. Pour des fichiers très larges (> 5 000 lignes),
     prévoir un temps de traitement proportionnel.
+
+    ### cURL
+    ```bash
+    # Avec mapping de colonnes explicite
+    curl -X POST "{{BASE_URL}}/api/v1/lookup/batch" \\
+      -F "file=@/chemin/vers/contacts.csv" \\
+      -F "col_first_name=Prénom" \\
+      -F "col_last_name=Nom" \\
+      -F "col_linkedin_url=LinkedIn URL" \\
+      -o lookup_result.csv
+
+    # Avec noms de colonnes standards (détection automatique)
+    curl -X POST "{{BASE_URL}}/api/v1/lookup/batch" \\
+      -F "file=@/chemin/vers/contacts.xlsx" \\
+      -o lookup_result.csv
+    ```
     """
     content = await file.read()
     df = _read_file(content, file.filename or "")

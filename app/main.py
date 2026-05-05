@@ -51,6 +51,21 @@ Companies  ──< Leads ──< Interactions
 - **Company** : entreprise (nom, secteur, effectif, LinkedIn)
 - **Lead** : contact individuel, rattaché optionnellement à une Company
 - **Interaction** : historique d'un contact (appel / mail) avec statut métier
+
+---
+
+## Import dans un client REST
+
+Le spec OpenAPI complet est disponible à l'adresse **`/openapi.json`**.
+
+| Client | Procédure |
+|--------|-----------|
+| **Postman** | *Import → Link* → coller l'URL `/openapi.json` |
+| **Insomnia** | *Import → From URL* → coller l'URL `/openapi.json` |
+| **cURL** | Exemples fournis dans chaque endpoint ci-dessous |
+
+> **Variable de base** : dans les exemples cURL, remplacer `{{BASE_URL}}`
+> par l'URL de votre déploiement (ex. `https://your-app.railway.app`).
 """
 
 TAGS_METADATA = [

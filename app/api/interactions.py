@@ -30,6 +30,11 @@ async def get_meta():
                    "Intérêts pour plus tard"]
     }
     ```
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/interactions/meta"
+    ```
     """
     return {"types": INTERACTION_TYPES, "statuses": INTERACTION_STATUSES}
 
@@ -52,6 +57,19 @@ async def create_interaction(body: InteractionCreate, db: AsyncSession = Depends
     - **`status`** doit être l'une des valeurs retournées par `GET /interactions/meta`.
     - **`timestamp`** est optionnel ; si omis, la date n'est pas renseignée.
     - **`infos`** est un champ texte libre pour les notes.
+
+    ### cURL
+    ```bash
+    curl -X POST "{{BASE_URL}}/api/v1/interactions" \\
+      -H "Content-Type: application/json" \\
+      -d '{
+        "lead_id": "<lead_uuid>",
+        "type": "appel",
+        "status": "NRP 1",
+        "timestamp": "2026-05-05T10:30:00Z",
+        "infos": "Messagerie pleine, rappeler demain matin"
+      }'
+    ```
     """
     interaction = Interaction(
         lead_id=body.lead_id,
@@ -83,6 +101,18 @@ async def list_interactions(
     Retourne la liste paginée des interactions, triées par date de création décroissante.
 
     Tous les filtres sont optionnels et cumulables.
+
+    ### cURL
+    ```bash
+    # Toutes les interactions
+    curl "{{BASE_URL}}/api/v1/interactions?page=1&page_size=20"
+
+    # Filtrer par lead
+    curl "{{BASE_URL}}/api/v1/interactions?lead_id=<uuid>"
+
+    # Filtrer par type et statut
+    curl "{{BASE_URL}}/api/v1/interactions?type=appel&status=NRP%201"
+    ```
     """
     stmt = select(Interaction)
     if lead_id:
@@ -108,7 +138,14 @@ async def list_interactions(
     },
 )
 async def get_interaction(interaction_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Retourne le détail d'une interaction à partir de son UUID."""
+    """
+    Retourne le détail d'une interaction à partir de son UUID.
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/interactions/<interaction_id>"
+    ```
+    """
     interaction = await db.get(Interaction, interaction_id)
     if not interaction:
         raise HTTPException(status_code=404, detail="Interaction introuvable.")
@@ -126,7 +163,16 @@ async def get_interaction(interaction_id: uuid.UUID, db: AsyncSession = Depends(
     },
 )
 async def update_interaction(interaction_id: uuid.UUID, body: InteractionUpdate, db: AsyncSession = Depends(get_db)):
-    """Met à jour partiellement une interaction (seuls les champs fournis sont modifiés)."""
+    """
+    Met à jour partiellement une interaction (seuls les champs fournis sont modifiés).
+
+    ### cURL
+    ```bash
+    curl -X PATCH "{{BASE_URL}}/api/v1/interactions/<interaction_id>" \\
+      -H "Content-Type: application/json" \\
+      -d '{"status": "A Répondu", "infos": "Intéressé, rappel prévu le 10/05"}'
+    ```
+    """
     interaction = await db.get(Interaction, interaction_id)
     if not interaction:
         raise HTTPException(status_code=404, detail="Interaction introuvable.")
@@ -147,7 +193,14 @@ async def update_interaction(interaction_id: uuid.UUID, body: InteractionUpdate,
     },
 )
 async def delete_interaction(interaction_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Supprime définitivement une interaction."""
+    """
+    Supprime définitivement une interaction.
+
+    ### cURL
+    ```bash
+    curl -X DELETE "{{BASE_URL}}/api/v1/interactions/<interaction_id>"
+    ```
+    """
     interaction = await db.get(Interaction, interaction_id)
     if not interaction:
         raise HTTPException(status_code=404, detail="Interaction introuvable.")

@@ -29,6 +29,19 @@ async def create_company(body: CompanyCreate, db: AsyncSession = Depends(get_db)
     Crée une nouvelle entreprise en base.
 
     L'URL LinkedIn est normalisée automatiquement. Si fournie, elle doit être unique.
+
+    ### cURL
+    ```bash
+    curl -X POST "{{BASE_URL}}/api/v1/companies" \\
+      -H "Content-Type: application/json" \\
+      -d '{
+        "company_name": "Scalefast",
+        "linkedin_url": "https://www.linkedin.com/company/scalefast",
+        "location": "Madrid, Espagne",
+        "industry": "E-commerce / SaaS",
+        "number_of_employees": 150
+      }'
+    ```
     """
     linkedin = normalize_linkedin_url(body.linkedin_url)
     company = Company(
@@ -66,7 +79,18 @@ async def list_companies(
     page_size: int = Query(20, ge=1, le=100, description="Résultats par page (max 100)."),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retourne la liste paginée des entreprises, avec filtre optionnel par nom."""
+    """
+    Retourne la liste paginée des entreprises, avec filtre optionnel par nom.
+
+    ### cURL
+    ```bash
+    # Toutes les entreprises
+    curl "{{BASE_URL}}/api/v1/companies?page=1&page_size=20"
+
+    # Recherche par nom
+    curl "{{BASE_URL}}/api/v1/companies?q=scalefast"
+    ```
+    """
     stmt = select(Company)
     if q:
         stmt = stmt.where(Company.company_name.ilike(f"%{q}%"))
@@ -86,7 +110,14 @@ async def list_companies(
     },
 )
 async def get_company(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Retourne la fiche complète d'une entreprise à partir de son UUID."""
+    """
+    Retourne la fiche complète d'une entreprise à partir de son UUID.
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/companies/<company_id>"
+    ```
+    """
     company = await db.get(Company, company_id)
     if not company:
         raise HTTPException(status_code=404, detail="Entreprise introuvable.")
@@ -107,6 +138,13 @@ async def update_company(company_id: uuid.UUID, body: CompanyUpdate, db: AsyncSe
     Met à jour partiellement une entreprise (seuls les champs fournis sont modifiés).
 
     L'URL LinkedIn est normalisée si fournie.
+
+    ### cURL
+    ```bash
+    curl -X PATCH "{{BASE_URL}}/api/v1/companies/<company_id>" \\
+      -H "Content-Type: application/json" \\
+      -d '{"number_of_employees": 200, "industry": "E-commerce"}'
+    ```
     """
     company = await db.get(Company, company_id)
     if not company:
@@ -133,6 +171,11 @@ async def delete_company(company_id: uuid.UUID, db: AsyncSession = Depends(get_d
     """
     Supprime une entreprise. Les leads qui y étaient rattachés conservent leur `company_name`
     mais leur `company_id` est mis à `NULL` (contrainte `ON DELETE SET NULL`).
+
+    ### cURL
+    ```bash
+    curl -X DELETE "{{BASE_URL}}/api/v1/companies/<company_id>"
+    ```
     """
     company = await db.get(Company, company_id)
     if not company:
@@ -169,6 +212,12 @@ async def import_companies(
     | `number_of_employees` | `employees`, `effectif` |
 
     Les lignes sans `company_name` sont ignorées.
+
+    ### cURL
+    ```bash
+    curl -X POST "{{BASE_URL}}/api/v1/companies/import" \\
+      -F "file=@/chemin/vers/companies.csv"
+    ```
     """
     content = await file.read()
     filename = file.filename or ""

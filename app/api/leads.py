@@ -33,6 +33,20 @@ async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
     - Les colonnes `full_name`, `last_name_normalized` et `first_name_normalized` sont
       calculées automatiquement par PostgreSQL (`GENERATED ALWAYS AS`).
     - Si une URL LinkedIn est fournie, elle doit être unique en base (contrainte `UNIQUE`).
+
+    ### cURL
+    ```bash
+    curl -X POST "{{BASE_URL}}/api/v1/leads" \\
+      -H "Content-Type: application/json" \\
+      -d '{
+        "first_name": "Jean",
+        "last_name": "Dupont",
+        "company_name": "Scalefast",
+        "job_title": "GTM Engineer",
+        "location": "Paris, France",
+        "linkedin_url": "https://www.linkedin.com/in/jeandupont"
+      }'
+    ```
     """
     linkedin = normalize_linkedin_url(body.linkedin_url)
     lead = Lead(
@@ -82,6 +96,18 @@ async def list_leads(
 
     La recherche par `q` utilise `pg_trgm` sur les noms normalisés (seuil `similarity > 0.3`)
     combinée à `ILIKE` sur l'entreprise et le poste.
+
+    ### cURL
+    ```bash
+    # Tous les leads (page 1)
+    curl "{{BASE_URL}}/api/v1/leads?page=1&page_size=20"
+
+    # Recherche fuzzy
+    curl "{{BASE_URL}}/api/v1/leads?q=dupont&page=1"
+
+    # Filtrer par entreprise
+    curl "{{BASE_URL}}/api/v1/leads?company_id=<uuid>"
+    ```
     """
     stmt = select(Lead)
     if company_id:
@@ -112,7 +138,14 @@ async def list_leads(
     },
 )
 async def get_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Retourne la fiche complète d'un lead à partir de son UUID."""
+    """
+    Retourne la fiche complète d'un lead à partir de son UUID.
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/leads/<lead_id>"
+    ```
+    """
     lead = await db.get(Lead, lead_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Lead introuvable.")
@@ -135,6 +168,13 @@ async def update_lead(lead_id: uuid.UUID, body: LeadUpdate, db: AsyncSession = D
     - L'URL LinkedIn est normalisée si fournie.
     - Les colonnes générées (`full_name`, `last_name_normalized`, `first_name_normalized`)
       sont recalculées automatiquement par PostgreSQL lors du `UPDATE`.
+
+    ### cURL
+    ```bash
+    curl -X PATCH "{{BASE_URL}}/api/v1/leads/<lead_id>" \\
+      -H "Content-Type: application/json" \\
+      -d '{"job_title": "Senior GTM Engineer", "location": "Lyon, France"}'
+    ```
     """
     lead = await db.get(Lead, lead_id)
     if not lead:
@@ -162,6 +202,11 @@ async def update_lead(lead_id: uuid.UUID, body: LeadUpdate, db: AsyncSession = D
 async def delete_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """
     Supprime un lead et toutes ses interactions associées (cascade `ON DELETE CASCADE`).
+
+    ### cURL
+    ```bash
+    curl -X DELETE "{{BASE_URL}}/api/v1/leads/<lead_id>"
+    ```
     """
     lead = await db.get(Lead, lead_id)
     if not lead:
@@ -213,6 +258,12 @@ async def import_leads(
       "skipped": 5,
       "errors": [{"row": 12, "error": "duplicate key value violates unique constraint"}]
     }
+    ```
+
+    ### cURL
+    ```bash
+    curl -X POST "{{BASE_URL}}/api/v1/leads/import" \\
+      -F "file=@/chemin/vers/leads.csv"
     ```
     """
     content = await file.read()
