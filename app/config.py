@@ -7,6 +7,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/intern_enrichment"
     LOOKUP_FUZZY_THRESHOLD: float = 0.55
+    ADMIN_ALLOWED_DOMAIN: str = "scalefast.fr"
+    ADMIN_BOOTSTRAP_EMAIL: str | None = None
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
