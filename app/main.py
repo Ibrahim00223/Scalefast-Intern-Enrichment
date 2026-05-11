@@ -7,7 +7,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import admin_users, auth, companies, interactions, leads, lookup
+from app.api import admin_users, auth, companies, interactions, leads, lookup, settings as settings_api
 from app.api.deps import get_current_user
 
 DESCRIPTION = """
@@ -133,6 +133,7 @@ app.include_router(companies.router, prefix="/api/v1", dependencies=[Depends(get
 app.include_router(leads.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
 app.include_router(interactions.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
 app.include_router(lookup.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
+app.include_router(settings_api.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
 app.include_router(admin_users.router, prefix="/api/v1")
 
 STATIC_DIR = Path(__file__).parent.parent / "static"

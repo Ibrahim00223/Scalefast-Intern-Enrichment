@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_EXPIRE_DAYS: int = 7
+    API_TOKEN_PREFIX: str = "sie_"
+    API_TOKEN_PEPPER: str = "change-me-too"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
