@@ -4,12 +4,11 @@ import uuid
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.api.deps import get_db
 from app.models.lead import Lead
-from app.schemas.company import CompanyOut
-from app.schemas.interaction import InteractionOut
 from app.schemas.lead import LeadCreate, LeadListOut, LeadOut, LeadUpdate, LeadWithCompanyAndInteractions
 from app.services.normalization import normalize_linkedin_url
 
@@ -20,21 +19,21 @@ router = APIRouter(prefix="/leads", tags=["leads"])
     "",
     response_model=LeadOut,
     status_code=201,
-    summary="Créer un lead",
+    summary="Creer un lead",
     responses={
-        201: {"description": "Lead créé avec succès."},
-        409: {"description": "Un lead avec cette URL LinkedIn existe déjà."},
+        201: {"description": "Lead cree avec succes."},
+        409: {"description": "Un lead avec cette URL LinkedIn existe deja."},
     },
 )
 async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
     """
-    Crée un nouveau lead en base.
+    Cree un nouveau lead en base.
 
-    - L'URL LinkedIn est normalisée automatiquement (lowercase, sans paramètres query,
-      gestion des préfixes langue `/in/`, `/pub/`, etc.).
+    - L'URL LinkedIn est normalisee automatiquement (lowercase, sans parametres query,
+      gestion des prefixes langue `/in/`, `/pub/`, etc.).
     - Les colonnes `full_name`, `last_name_normalized` et `first_name_normalized` sont
-      calculées automatiquement par PostgreSQL (`GENERATED ALWAYS AS`).
-    - Si une URL LinkedIn est fournie, elle doit être unique en base (contrainte `UNIQUE`).
+      calculees automatiquement par PostgreSQL (`GENERATED ALWAYS AS`).
+    - Si une URL LinkedIn est fournie, elle doit etre unique en base (contrainte `UNIQUE`).
 
     ### cURL
     ```bash
@@ -69,8 +68,8 @@ async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
         await db.rollback()
         msg = str(exc)
         if "linkedin_url" in msg or "unique" in msg.lower():
-            raise HTTPException(status_code=409, detail="Un lead avec cette URL LinkedIn existe déjà.")
-        raise HTTPException(status_code=500, detail=f"Erreur base de données : {msg[:200]}")
+            raise HTTPException(status_code=409, detail="Un lead avec cette URL LinkedIn existe deja.")
+        raise HTTPException(status_code=500, detail=f"Erreur base de donnees : {msg[:200]}")
     return lead
 
 
@@ -83,21 +82,21 @@ async def list_leads(
     q: str | None = Query(
         None,
         description=(
-            "Recherche textuelle. Interroge simultanément : nom (fuzzy via `pg_trgm`), "
-            "prénom (fuzzy), nom d'entreprise (`ILIKE`) et intitulé de poste (`ILIKE`). "
+            "Recherche textuelle. Interroge simultanement : nom (fuzzy via `pg_trgm`), "
+            "prenom (fuzzy), nom d'entreprise (`ILIKE`) et intitule de poste (`ILIKE`). "
             "Exemple : `dupont`, `scalefast`, `gtm`."
         ),
     ),
-    company_id: uuid.UUID | None = Query(None, description="Filtre par UUID d'entreprise associée."),
-    page: int = Query(1, ge=1, description="Numéro de page (commence à 1)."),
-    page_size: int = Query(20, ge=1, le=100, description="Nombre de résultats par page (max 100)."),
+    company_id: uuid.UUID | None = Query(None, description="Filtre par UUID d'entreprise associee."),
+    page: int = Query(1, ge=1, description="Numero de page (commence a 1)."),
+    page_size: int = Query(20, ge=1, le=100, description="Nombre de resultats par page (max 100)."),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Retourne la liste paginée des leads, avec filtres optionnels.
+    Retourne la liste paginee des leads, avec filtres optionnels.
 
-    La recherche par `q` utilise `pg_trgm` sur les noms normalisés (seuil `similarity > 0.3`)
-    combinée à `ILIKE` sur l'entreprise et le poste.
+    La recherche par `q` utilise `pg_trgm` sur les noms normalises (seuil `similarity > 0.3`)
+    combinee a `ILIKE` sur l'entreprise et le poste.
 
     ### cURL
     ```bash
@@ -133,20 +132,17 @@ async def list_leads(
 @router.get(
     "/{lead_id}/full",
     response_model=LeadWithCompanyAndInteractions,
-    summary="Récupérer un lead complet avec entreprise et interactions",
+    summary="Recuperer un lead complet avec entreprise et interactions",
     responses={
-        200: {"description": "Fiche complète du lead avec entreprise et interactions."},
+        200: {"description": "Fiche complete du lead avec entreprise et interactions."},
         404: {"description": "Lead introuvable."},
     },
 )
-async def get_lead_full(
-    lead_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-):
+async def get_lead_full(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """
-    Retourne la fiche complète d'un lead à partir de son UUID, incluant :
-    - Les données du lead
-    - Les données de l'entreprise associée (si existe)
+    Retourne la fiche complete d'un lead a partir de son UUID, incluant :
+    - Les donnees du lead
+    - Les donnees de l'entreprise associee (si elle existe)
     - Toutes les interactions du lead
 
     ### cURL
@@ -164,19 +160,21 @@ async def get_lead_full(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead introuvable.")
 
-    return LeadWithCompanyAndInteractions.from_orm(lead)
+    return LeadWithCompanyAndInteractions.model_validate(lead)
 
 
+@router.get(
+    "/{lead_id}",
     response_model=LeadOut,
-    summary="Récupérer un lead par ID",
+    summary="Recuperer un lead par ID",
     responses={
-        200: {"description": "Fiche complète du lead."},
+        200: {"description": "Fiche complete du lead."},
         404: {"description": "Lead introuvable."},
     },
 )
 async def get_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """
-    Retourne la fiche complète d'un lead à partir de son UUID.
+    Retourne la fiche complete d'un lead a partir de son UUID.
 
     ### cURL
     ```bash
@@ -192,19 +190,19 @@ async def get_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 @router.patch(
     "/{lead_id}",
     response_model=LeadOut,
-    summary="Mettre à jour un lead",
+    summary="Mettre a jour un lead",
     responses={
-        200: {"description": "Lead mis à jour."},
+        200: {"description": "Lead mis a jour."},
         404: {"description": "Lead introuvable."},
     },
 )
 async def update_lead(lead_id: uuid.UUID, body: LeadUpdate, db: AsyncSession = Depends(get_db)):
     """
-    Met à jour partiellement un lead (seuls les champs fournis dans le body sont modifiés).
+    Met a jour partiellement un lead (seuls les champs fournis dans le body sont modifies).
 
-    - L'URL LinkedIn est normalisée si fournie.
-    - Les colonnes générées (`full_name`, `last_name_normalized`, `first_name_normalized`)
-      sont recalculées automatiquement par PostgreSQL lors du `UPDATE`.
+    - L'URL LinkedIn est normalisee si fournie.
+    - Les colonnes generees (`full_name`, `last_name_normalized`, `first_name_normalized`)
+      sont recalculees automatiquement par PostgreSQL lors du `UPDATE`.
 
     ### cURL
     ```bash
@@ -227,76 +225,18 @@ async def update_lead(lead_id: uuid.UUID, body: LeadUpdate, db: AsyncSession = D
     return lead
 
 
-@router.get(
-    "/{lead_id}/full",
-    response_model=LeadWithCompanyAndInteractions,
-    summary="Récupérer un lead complet avec entreprise et interactions",
+@router.delete(
+    "/{lead_id}",
+    status_code=204,
+    summary="Supprimer un lead",
     responses={
-        200: {"description": "Fiche complète du lead avec entreprise et interactions."},
+        204: {"description": "Lead supprime (les interactions associees sont supprimees en cascade)."},
         404: {"description": "Lead introuvable."},
     },
 )
-async def get_lead_full(
-    lead_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-):
+async def delete_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """
-    Retourne la fiche complète d'un lead à partir de son UUID, incluant :
-    - Les données du lead
-    - Les données de l'entreprise associée (si existe)
-    - Toutes les interactions du lead
-
-    ### cURL
-    ```bash
-    curl "{{BASE_URL}}/api/v1/leads/{lead_id}/full"
-    ```
-    """
-    result = await db.execute(
-        select(Lead)
-        .options(joinedload(Lead.company), joinedload(Lead.interactions))
-        .where(Lead.id == lead_id)
-    )
-    lead = result.scalar_one_or_none()
-
-@router.get(
-    "/{lead_id}/full",
-    response_model=LeadWithCompanyAndInteractions,
-    summary="Récupérer un lead complet avec entreprise et interactions",
-    responses={
-        200: {"description": "Fiche complète du lead avec entreprise et interactions."},
-        404: {"description": "Lead introuvable."},
-    },
-)
-async def get_lead_full(
-    lead_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Retourne la fiche complète d'un lead à partir de son UUID, incluant :
-    - Les données du lead
-    - Les données de l'entreprise associée (si existe)
-    - Toutes les interactions du lead
-
-    ### cURL
-    ```bash
-    curl "{{BASE_URL}}/api/v1/leads/{lead_id}/full"
-    ```
-    """
-    result = await db.execute(
-        select(Lead)
-        .options(joinedload(Lead.company), joinedload(Lead.interactions))
-        .where(Lead.id == lead_id)
-    )
-    lead = result.scalar_one_or_none()
-
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead introuvable.")
-
-    return LeadWithCompanyAndInteractions.from_orm(lead)
-
-
-    """
-    Supprime un lead et toutes ses interactions associées (cascade `ON DELETE CASCADE`).
+    Supprime un lead et toutes ses interactions associees (cascade `ON DELETE CASCADE`).
 
     ### cURL
     ```bash
@@ -315,12 +255,12 @@ async def get_lead_full(
     status_code=200,
     summary="Importer des leads depuis un fichier",
     responses={
-        200: {"description": "Rapport d'import : nombre de leads créés, ignorés et erreurs."},
-        400: {"description": "Format de fichier non supporté."},
+        200: {"description": "Rapport d'import : nombre de leads crees, ignores et erreurs."},
+        400: {"description": "Format de fichier non supporte."},
     },
 )
 async def import_leads(
-    file: UploadFile = File(..., description="Fichier CSV ou Excel contenant les leads à importer."),
+    file: UploadFile = File(..., description="Fichier CSV ou Excel contenant les leads a importer."),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -328,7 +268,7 @@ async def import_leads(
 
     ### Colonnes reconnues automatiquement
 
-    | Champ | Alias acceptés |
+    | Champ | Alias acceptes |
     |-------|---------------|
     | `last_name` | `nom`, `last name`, `lastname`, `surname` |
     | `first_name` | `prenom`, `prénom`, `first name`, `firstname` |
@@ -336,15 +276,15 @@ async def import_leads(
     | `job_title` | `poste`, `titre`, `title` |
     | `location` | `localisation` |
     | `linkedin_url` | `linkedin` |
-    | `linkedin_id` | — |
+    | `linkedin_id` | - |
 
     ### Comportement
 
-    - Les lignes sans `last_name` **et** `first_name` sont ignorées (`skipped`).
-    - Les doublons LinkedIn URL sont signalés dans `errors` sans bloquer l'import.
-    - La réponse indique le nombre de leads `created`, `skipped` et les `errors` détaillées.
+    - Les lignes sans `last_name` **et** `first_name` sont ignorees (`skipped`).
+    - Les doublons LinkedIn URL sont signales dans `errors` sans bloquer l'import.
+    - La reponse indique le nombre de leads `created`, `skipped` et les `errors` detaillees.
 
-    ### Exemple de réponse
+    ### Exemple de reponse
     ```json
     {
       "filename": "leads_mai_2026.csv",
@@ -368,7 +308,7 @@ async def import_leads(
     elif filename.endswith((".xlsx", ".xls")):
         df = pd.read_excel(io.BytesIO(content), dtype=str)
     else:
-        raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportés.")
+        raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportes.")
 
     df = df.where(pd.notnull(df), None)
     cols = {c.lower().strip(): c for c in df.columns}
@@ -383,7 +323,7 @@ async def import_leads(
     created, skipped, errors = 0, 0, []
     for i, row in df.iterrows():
         row = row.to_dict()
-        last  = get(row, "last_name", "nom", "last name", "lastname", "surname")
+        last = get(row, "last_name", "nom", "last name", "lastname", "surname")
         first = get(row, "first_name", "prenom", "prénom", "first name", "firstname")
         if not last or not first:
             skipped += 1

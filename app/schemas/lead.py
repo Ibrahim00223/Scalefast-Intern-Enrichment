@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.company import CompanyOut
+from app.schemas.interaction import InteractionOut
 
 
 class LeadCreate(BaseModel):
@@ -71,7 +72,7 @@ class LeadWithCompanyOut(LeadOut):
 class LeadWithCompanyAndInteractions(LeadWithCompanyOut):
     """Lead avec la fiche entreprise associée et toutes les interactions incluses."""
 
-    interactions: list[InteractionOut] = []
+    interactions: list[InteractionOut] = Field(default_factory=list, description="Historique des interactions du lead.")
 
 
 class LeadListOut(BaseModel):
