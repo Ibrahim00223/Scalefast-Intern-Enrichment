@@ -366,10 +366,6 @@
   <div id="sub-admin-users" class="sub-panel">
     <div class="card">
       <div style="display:flex;gap:.5rem;align-items:end;flex-wrap:wrap;margin-bottom:1rem">
-        <div style="min-width:260px;flex:1">
-          <label>Email admin (header X-User-Email)</label>
-          <input id="admin-email" type="text" placeholder="admin@scalefast.fr" />
-        </div>
         <div style="min-width:220px;flex:1">
           <label>Recherche</label>
           <input id="admin-users-q" type="text" placeholder="Nom ou email" />
@@ -421,7 +417,7 @@
         </form>
       </div>
 
-      <div id="admin-users-table" class="table-wrap"><div class="empty">Renseignez un email admin puis chargez la liste.</div></div>
+      <div id="admin-users-table" class="table-wrap"><div class="empty">Chargez la liste des utilisateurs.</div></div>
       <div class="pagination" id="admin-users-pagination"></div>
       <div id="admin-users-msg" class="success-msg"></div>
     </div>
@@ -563,6 +559,10 @@ let detectedColumns = [];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function apiJSON(res) {
+  if (res.status === 401) {
+    window.location.href = `${API}/auth/google/login`;
+    throw new Error('Session expirée. Redirection vers Google...');
+  }
   const ct = res.headers.get('content-type') || '';
   if (ct.includes('application/json')) return res.json();
   const text = await res.text();
@@ -889,10 +889,7 @@ async function runLeadsImport() {
 let adminUsersPage = 1;
 
 function getAdminHeaders() {
-  const email = document.getElementById('admin-email').value.trim().toLowerCase();
-  if (!email) throw new Error('Renseignez votre email admin.');
-  localStorage.setItem('admin_email', email);
-  return {'X-User-Email': email};
+  return {};
 }
 
 function fmtDate(v) {
@@ -1029,8 +1026,13 @@ document.getElementById('form-add-admin-user').addEventListener('submit', async 
   }
 });
 
-const savedAdminEmail = localStorage.getItem('admin_email') || '';
-if (savedAdminEmail) document.getElementById('admin-email').value = savedAdminEmail;
+async function ensureAuthenticated() {
+  const res = await fetch(`${API}/auth/me`);
+  if (!res.ok) {
+    window.location.href = `${API}/auth/google/login`;
+  }
+}
+ensureAuthenticated();
 
 // ══════════════════════════════════════════════════════════════════════════════
 // COMPANIES CRUD

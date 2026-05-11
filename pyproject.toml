@@ -18,6 +18,9 @@ dependencies = [
     "pandas>=2.2",
     "openpyxl>=3.1",
     "python-multipart>=0.0.9",
+    "PyJWT>=2.8",
+    "google-auth>=2.34",
+    "requests>=2.32",
 ]
 
 [project.optional-dependencies]

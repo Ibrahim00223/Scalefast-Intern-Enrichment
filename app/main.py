@@ -1,13 +1,14 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import admin_users, companies, interactions, leads, lookup
+from app.api import admin_users, auth, companies, interactions, leads, lookup
+from app.api.deps import get_current_user
 
 DESCRIPTION = """
 ## Présentation
@@ -127,10 +128,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(companies.router, prefix="/api/v1")
-app.include_router(leads.router, prefix="/api/v1")
-app.include_router(interactions.router, prefix="/api/v1")
-app.include_router(lookup.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(companies.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
+app.include_router(leads.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
+app.include_router(interactions.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
+app.include_router(lookup.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
 app.include_router(admin_users.router, prefix="/api/v1")
 
 STATIC_DIR = Path(__file__).parent.parent / "static"

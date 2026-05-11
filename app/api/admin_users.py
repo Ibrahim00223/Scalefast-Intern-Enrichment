@@ -1,46 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_db, require_admin
 from app.config import settings
 from app.models.user import USER_ROLES, User
 from app.schemas.user import UserCreate, UserListOut, UserOut, UserRoleUpdate, UserStatusUpdate
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
-
-
-async def require_admin(
-    db: AsyncSession = Depends(get_db),
-    x_user_email: str = Header(..., alias="X-User-Email"),
-) -> User:
-    email = x_user_email.strip().lower()
-    if not email:
-        raise HTTPException(status_code=401, detail="Header X-User-Email requis.")
-
-    user = (await db.execute(select(User).where(func.lower(User.email) == email))).scalar_one_or_none()
-
-    if not user:
-        total_users = (await db.execute(select(func.count()).select_from(User))).scalar_one()
-        is_allowed_domain = email.endswith(f"@{settings.ADMIN_ALLOWED_DOMAIN}")
-        can_bootstrap = settings.ADMIN_BOOTSTRAP_EMAIL and email == settings.ADMIN_BOOTSTRAP_EMAIL.lower()
-        if total_users == 0 and is_allowed_domain and (can_bootstrap or settings.ADMIN_BOOTSTRAP_EMAIL is None):
-            user = User(name="Admin", email=email, role="admin", is_active=True)
-            db.add(user)
-            await db.commit()
-            await db.refresh(user)
-        else:
-            raise HTTPException(status_code=403, detail="Utilisateur non autorise.")
-
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Utilisateur desactive.")
-
-    if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acces admin requis.")
-
-    return user
 
 
 @router.get("", response_model=UserListOut, summary="Lister les utilisateurs")

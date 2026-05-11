@@ -9,6 +9,16 @@ class Settings(BaseSettings):
     LOOKUP_FUZZY_THRESHOLD: float = 0.55
     ADMIN_ALLOWED_DOMAIN: str = "scalefast.fr"
     ADMIN_BOOTSTRAP_EMAIL: str | None = None
+    APP_BASE_URL: str = "http://127.0.0.1:8000"
+
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+
+    JWT_SECRET_KEY: str = "change-me"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_EXPIRE_MINUTES: int = 15
+    JWT_REFRESH_EXPIRE_DAYS: int = 7
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
