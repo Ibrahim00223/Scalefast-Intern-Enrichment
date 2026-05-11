@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.user import USER_ROLES
 
 
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    email: EmailStr
+    email: str = Field(..., min_length=3, max_length=320)
     role: str = Field(default="readonly", pattern="^(admin|agent|readonly)$")
     is_active: bool = True
 
@@ -26,7 +26,7 @@ class UserOut(BaseModel):
 
     id: uuid.UUID
     name: str
-    email: EmailStr
+    email: str
     role: str
     is_active: bool
     google_sub: str | None = None
