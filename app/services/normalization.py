@@ -6,6 +6,10 @@ from urllib.parse import urlparse, urlunparse
 def normalize_linkedin_url(raw: str | None) -> str | None:
     if not raw:
         return None
+
+    if not isinstance(raw, str):
+        raw = str(raw)
+
     url = raw.strip().lower()
 
     # Add scheme if missing so urlparse works correctly

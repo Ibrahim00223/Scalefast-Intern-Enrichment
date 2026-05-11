@@ -194,6 +194,12 @@ async def lookup_batch(
     df = df.where(pd.notnull(df), None)
     cols_lower = {c.lower().strip(): c for c in df.columns}
 
+    def clean_cell(value) -> str | None:
+        if value is None or pd.isna(value):
+            return None
+        text = str(value).strip()
+        return text if text else None
+
     def find_col(explicit: str, *aliases):
         if explicit and explicit in df.columns:
             return explicit
@@ -217,9 +223,9 @@ async def lookup_batch(
 
     rows: list[BatchLookupRow] = []
     for i, row in df.iterrows():
-        last    = row.get(last_col) or ""
-        first   = row.get(first_col) or ""
-        linkedin = row.get(linkedin_col) if linkedin_col else None
+        last = clean_cell(row.get(last_col)) or ""
+        first = clean_cell(row.get(first_col)) or ""
+        linkedin = clean_cell(row.get(linkedin_col)) if linkedin_col else None
 
         if not last or not first:
             rows.append(BatchLookupRow(
