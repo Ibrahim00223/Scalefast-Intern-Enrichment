@@ -2,7 +2,7 @@ import io
 import uuid
 
 import pandas as pd
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -13,6 +13,14 @@ from app.schemas.lead import LeadCreate, LeadListOut, LeadOut, LeadUpdate, LeadW
 from app.services.normalization import normalize_linkedin_url
 
 router = APIRouter(prefix="/leads", tags=["leads"])
+
+
+def _read_file(content: bytes, filename: str) -> pd.DataFrame:
+    if filename.endswith(".csv"):
+        return pd.read_csv(io.BytesIO(content), dtype=str)
+    if filename.endswith((".xlsx", ".xls")):
+        return pd.read_excel(io.BytesIO(content), dtype=str)
+    raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportes.")
 
 
 @router.post(
@@ -251,6 +259,22 @@ async def delete_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post(
+    "/import/columns",
+    summary="Detecter les colonnes d'un fichier d'import leads",
+    responses={
+        200: {"description": "Liste des colonnes detectees dans le fichier."},
+        400: {"description": "Format de fichier non supporte."},
+    },
+)
+async def get_import_columns(
+    file: UploadFile = File(..., description="Fichier CSV ou Excel a analyser."),
+):
+    content = await file.read()
+    df = _read_file(content, file.filename or "")
+    return {"columns": list(df.columns)}
+
+
+@router.post(
     "/import",
     status_code=200,
     summary="Importer des leads depuis un fichier",
@@ -261,6 +285,13 @@ async def delete_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 )
 async def import_leads(
     file: UploadFile = File(..., description="Fichier CSV ou Excel contenant les leads a importer."),
+    col_last_name: str = Form(""),
+    col_first_name: str = Form(""),
+    col_company_name: str = Form(""),
+    col_job_title: str = Form(""),
+    col_location: str = Form(""),
+    col_linkedin_id: str = Form(""),
+    col_linkedin_url: str = Form(""),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -303,40 +334,59 @@ async def import_leads(
     """
     content = await file.read()
     filename = file.filename or ""
-    if filename.endswith(".csv"):
-        df = pd.read_csv(io.BytesIO(content), dtype=str)
-    elif filename.endswith((".xlsx", ".xls")):
-        df = pd.read_excel(io.BytesIO(content), dtype=str)
-    else:
-        raise HTTPException(status_code=400, detail="Seuls les fichiers .csv et .xlsx/.xls sont supportes.")
+    df = _read_file(content, filename)
 
     df = df.where(pd.notnull(df), None)
     cols = {c.lower().strip(): c for c in df.columns}
 
-    def get(row, *keys):
-        for k in keys:
-            if k in cols:
-                v = row.get(cols[k])
-                return v if v and str(v).strip() else None
+    def find_col(explicit: str, *aliases: str) -> str | None:
+        if explicit and explicit in df.columns:
+            return explicit
+        for alias in aliases:
+            if alias in cols:
+                return cols[alias]
         return None
+
+    last_col = find_col(col_last_name, "last_name", "nom", "last name", "lastname", "surname")
+    first_col = find_col(col_first_name, "first_name", "prenom", "prénom", "first name", "firstname")
+    company_col = find_col(col_company_name, "company_name", "company", "entreprise")
+    job_col = find_col(col_job_title, "job_title", "poste", "titre", "title")
+    location_col = find_col(col_location, "location", "localisation")
+    linkedin_id_col = find_col(col_linkedin_id, "linkedin_id")
+    linkedin_url_col = find_col(col_linkedin_url, "linkedin_url", "linkedin")
+
+    if not last_col or not first_col:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Colonnes 'first_name' et 'last_name' introuvables. "
+                f"Colonnes detectees : {list(df.columns)}"
+            ),
+        )
+
+    def get_col(row: dict, col_name: str | None):
+        if not col_name:
+            return None
+        v = row.get(col_name)
+        return v if v and str(v).strip() else None
 
     created, skipped, errors = 0, 0, []
     for i, row in df.iterrows():
         row = row.to_dict()
-        last = get(row, "last_name", "nom", "last name", "lastname", "surname")
-        first = get(row, "first_name", "prenom", "prénom", "first name", "firstname")
+        last = get_col(row, last_col)
+        first = get_col(row, first_col)
         if not last or not first:
             skipped += 1
             continue
         try:
-            linkedin = normalize_linkedin_url(get(row, "linkedin_url", "linkedin"))
+            linkedin = normalize_linkedin_url(get_col(row, linkedin_url_col))
             lead = Lead(
                 last_name=last,
                 first_name=first,
-                company_name=get(row, "company_name", "company", "entreprise"),
-                job_title=get(row, "job_title", "poste", "titre", "title"),
-                location=get(row, "location", "localisation"),
-                linkedin_id=get(row, "linkedin_id"),
+                company_name=get_col(row, company_col),
+                job_title=get_col(row, job_col),
+                location=get_col(row, location_col),
+                linkedin_id=get_col(row, linkedin_id_col),
                 linkedin_url=linkedin,
             )
             db.add(lead)
@@ -347,4 +397,10 @@ async def import_leads(
             errors.append({"row": int(i) + 2, "error": str(e)})
 
     await db.commit()
-    return {"filename": filename, "total_rows": len(df), "created": created, "skipped": skipped, "errors": errors}
+    return {
+        "filename": filename,
+        "total_rows": len(df),
+        "created": created,
+        "skipped": skipped,
+        "errors": errors,
+    }

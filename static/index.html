@@ -245,12 +245,33 @@
 
       <hr class="sep" />
 
-      <!-- Import -->
-      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
-        <span style="font-size:.82rem;color:var(--gray-600)">Import CSV/Excel :</span>
-        <input type="file" id="leads-import-file" accept=".csv,.xlsx,.xls" style="font-size:.82rem" />
-        <button class="btn btn-secondary btn-sm" onclick="importLeads()">Importer</button>
-        <span id="leads-import-msg" style="font-size:.82rem"></span>
+      <!-- Import avec mapping -->
+      <div style="margin-bottom:1rem">
+        <div class="step-label">Ajout par fichier (CSV/Excel)</div>
+        <div class="dropzone" id="leads-dropzone" onclick="document.getElementById('leads-import-file').click()" style="padding:1.2rem">
+          <div style="font-size:1.2rem">📥</div>
+          <div style="font-size:.84rem">Cliquez ou glissez votre fichier prospects</div>
+          <div class="dz-hint">.csv · .xlsx · .xls</div>
+          <div class="dz-file" id="leads-dz-filename"></div>
+        </div>
+        <input type="file" id="leads-import-file" accept=".csv,.xlsx,.xls" style="display:none" />
+
+        <div id="leads-mapping-section" style="display:none;margin-top:.9rem">
+          <p style="font-size:.82rem;color:var(--gray-600);margin-bottom:.6rem">Mappez les colonnes du fichier vers les champs prospect.</p>
+          <div class="mapping-grid" style="margin-bottom:.5rem">
+            <div><label>Prénom *</label><select id="lead-map-first"></select></div>
+            <div><label>Nom *</label><select id="lead-map-last"></select></div>
+            <div><label>Entreprise</label><select id="lead-map-company"></select></div>
+            <div><label>Poste</label><select id="lead-map-job"></select></div>
+            <div><label>Localisation</label><select id="lead-map-location"></select></div>
+            <div><label>LinkedIn ID</label><select id="lead-map-linkedin-id"></select></div>
+            <div class="full"><label>LinkedIn URL</label><select id="lead-map-linkedin"></select></div>
+          </div>
+          <div class="btn-row" style="margin-top:.5rem">
+            <button class="btn btn-secondary btn-sm" id="btn-run-leads-import"><span id="lbl-run-leads-import">Importer les prospects</span></button>
+            <span id="leads-import-msg" style="font-size:.82rem"></span>
+          </div>
+        </div>
       </div>
 
       <div id="leads-table" class="table-wrap"><div class="empty">Lancez une recherche ou chargez tous les leads.</div></div>
@@ -578,6 +599,20 @@ document.getElementById('form-single').addEventListener('submit', async e => {
 // LEADS CRUD
 // ══════════════════════════════════════════════════════════════════════════════
 let leadsPage = 1;
+let leadsImportFileObj = null;
+
+const leadsDropzone = document.getElementById('leads-dropzone');
+const leadsImportInput = document.getElementById('leads-import-file');
+
+leadsDropzone.addEventListener('dragover', e => { e.preventDefault(); leadsDropzone.classList.add('drag-over'); });
+leadsDropzone.addEventListener('dragleave', () => leadsDropzone.classList.remove('drag-over'));
+leadsDropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  leadsDropzone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setLeadsImportFile(e.dataTransfer.files[0]);
+});
+leadsImportInput.addEventListener('change', () => { if (leadsImportInput.files[0]) setLeadsImportFile(leadsImportInput.files[0]); });
+document.getElementById('btn-run-leads-import').addEventListener('click', runLeadsImport);
 
 function openAddLead()  { document.getElementById('add-lead-section').classList.add('open'); }
 function closeAddLead() { document.getElementById('add-lead-section').classList.remove('open'); document.getElementById('form-add-lead').reset(); document.getElementById('add-lead-err').textContent=''; }
@@ -682,19 +717,103 @@ async function deleteLead(id) {
   } catch(err) { alert('Erreur : '+err.message); }
 }
 
-async function importLeads() {
-  const file = document.getElementById('leads-import-file').files[0];
-  if (!file) return;
+async function setLeadsImportFile(file) {
+  leadsImportFileObj = file;
+  document.getElementById('leads-dz-filename').textContent = file.name;
   const msg = document.getElementById('leads-import-msg');
-  msg.style.color = 'var(--gray-600)'; msg.textContent = 'Import en cours…';
-  const form = new FormData(); form.append('file', file);
+  msg.textContent = '';
+  msg.style.color = 'var(--gray-600)';
+  document.getElementById('leads-mapping-section').style.display = 'none';
+
   try {
-    const res = await fetch(`${API}/leads/import`, {method:'POST',body:form});
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${API}/leads/import/columns`, {method: 'POST', body: form});
+    if (!res.ok) {
+      const e = await apiJSON(res);
+      throw new Error(e.detail || res.statusText);
+    }
     const d = await apiJSON(res);
-    if (!res.ok) throw new Error(d.detail||res.statusText);
-    msg.style.color = 'var(--green)'; msg.textContent = `✓ ${d.created} créés, ${d.skipped} ignorés, ${d.errors.length} erreurs.`;
+    buildLeadImportMappingUI(d.columns || []);
+    document.getElementById('leads-mapping-section').style.display = '';
+  } catch (err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Erreur lecture fichier : ' + err.message;
+  }
+}
+
+function buildLeadImportMappingUI(columns) {
+  const noneOpt = '<option value="">— Ignorer —</option>';
+  ['lead-map-first','lead-map-last','lead-map-company','lead-map-job','lead-map-location','lead-map-linkedin-id','lead-map-linkedin'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = noneOpt + columns.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  });
+
+  function autoSelect(selId, ...aliases) {
+    const sel = document.getElementById(selId);
+    for (const alias of aliases) {
+      const opt = [...sel.options].find(o => o.value.toLowerCase().trim() === alias);
+      if (opt) { sel.value = opt.value; return; }
+    }
+  }
+
+  autoSelect('lead-map-first', 'first_name', 'prénom', 'prenom', 'firstname', 'first name');
+  autoSelect('lead-map-last', 'last_name', 'nom', 'lastname', 'surname', 'last name');
+  autoSelect('lead-map-company', 'company_name', 'company', 'entreprise');
+  autoSelect('lead-map-job', 'job_title', 'poste', 'titre', 'title');
+  autoSelect('lead-map-location', 'location', 'localisation');
+  autoSelect('lead-map-linkedin-id', 'linkedin_id');
+  autoSelect('lead-map-linkedin', 'linkedin_url', 'linkedin', 'linkedin url');
+}
+
+async function runLeadsImport() {
+  const msg = document.getElementById('leads-import-msg');
+  if (!leadsImportFileObj) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Sélectionnez un fichier.';
+    return;
+  }
+
+  const colFirst = document.getElementById('lead-map-first').value;
+  const colLast = document.getElementById('lead-map-last').value;
+  if (!colFirst || !colLast) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Mappez les colonnes Prénom et Nom.';
+    return;
+  }
+
+  const btn = document.getElementById('btn-run-leads-import');
+  const lbl = document.getElementById('lbl-run-leads-import');
+  btn.disabled = true;
+  lbl.innerHTML = '<span class="loader"></span>';
+  msg.style.color = 'var(--gray-600)';
+  msg.textContent = 'Import en cours…';
+
+  const form = new FormData();
+  form.append('file', leadsImportFileObj);
+  form.append('col_first_name', colFirst);
+  form.append('col_last_name', colLast);
+  form.append('col_company_name', document.getElementById('lead-map-company').value);
+  form.append('col_job_title', document.getElementById('lead-map-job').value);
+  form.append('col_location', document.getElementById('lead-map-location').value);
+  form.append('col_linkedin_id', document.getElementById('lead-map-linkedin-id').value);
+  form.append('col_linkedin_url', document.getElementById('lead-map-linkedin').value);
+
+  try {
+    const res = await fetch(`${API}/leads/import`, {method: 'POST', body: form});
+    const d = await apiJSON(res);
+    if (!res.ok) throw new Error(d.detail || res.statusText);
+
+    msg.style.color = d.errors.length ? 'var(--amber)' : 'var(--green)';
+    msg.textContent = `✓ ${d.created} créés, ${d.skipped} ignorés, ${d.errors.length} erreurs.`;
     loadLeads(1);
-  } catch(err) { msg.style.color='var(--red)'; msg.textContent='Erreur : '+err.message; }
+  } catch (err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Erreur : ' + err.message;
+  } finally {
+    lbl.textContent = 'Importer les prospects';
+    btn.disabled = false;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
