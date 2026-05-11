@@ -68,6 +68,12 @@ class LeadWithCompanyOut(LeadOut):
     company: CompanyOut | None = Field(None, description="Fiche complète de l'entreprise associée.")
 
 
+class LeadWithCompanyAndInteractions(LeadWithCompanyOut):
+    """Lead avec la fiche entreprise associée et toutes les interactions incluses."""
+
+    interactions: list[InteractionOut] = []
+
+
 class LeadListOut(BaseModel):
     """Réponse paginée pour la liste des leads."""
 

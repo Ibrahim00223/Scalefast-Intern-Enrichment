@@ -4,11 +4,13 @@ import uuid
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.api.deps import get_db
 from app.models.lead import Lead
-from app.schemas.lead import LeadCreate, LeadListOut, LeadOut, LeadUpdate
+from app.schemas.company import CompanyOut
+from app.schemas.interaction import InteractionOut
+from app.schemas.lead import LeadCreate, LeadListOut, LeadOut, LeadUpdate, LeadWithCompanyAndInteractions
 from app.services.normalization import normalize_linkedin_url
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -129,7 +131,42 @@ async def list_leads(
 
 
 @router.get(
-    "/{lead_id}",
+    "/{lead_id}/full",
+    response_model=LeadWithCompanyAndInteractions,
+    summary="Récupérer un lead complet avec entreprise et interactions",
+    responses={
+        200: {"description": "Fiche complète du lead avec entreprise et interactions."},
+        404: {"description": "Lead introuvable."},
+    },
+)
+async def get_lead_full(
+    lead_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retourne la fiche complète d'un lead à partir de son UUID, incluant :
+    - Les données du lead
+    - Les données de l'entreprise associée (si existe)
+    - Toutes les interactions du lead
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/leads/{lead_id}/full"
+    ```
+    """
+    result = await db.execute(
+        select(Lead)
+        .options(joinedload(Lead.company), joinedload(Lead.interactions))
+        .where(Lead.id == lead_id)
+    )
+    lead = result.scalar_one_or_none()
+
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead introuvable.")
+
+    return LeadWithCompanyAndInteractions.from_orm(lead)
+
+
     response_model=LeadOut,
     summary="Récupérer un lead par ID",
     responses={
@@ -190,16 +227,74 @@ async def update_lead(lead_id: uuid.UUID, body: LeadUpdate, db: AsyncSession = D
     return lead
 
 
-@router.delete(
-    "/{lead_id}",
-    status_code=204,
-    summary="Supprimer un lead",
+@router.get(
+    "/{lead_id}/full",
+    response_model=LeadWithCompanyAndInteractions,
+    summary="Récupérer un lead complet avec entreprise et interactions",
     responses={
-        204: {"description": "Lead supprimé (les interactions associées sont supprimées en cascade)."},
+        200: {"description": "Fiche complète du lead avec entreprise et interactions."},
         404: {"description": "Lead introuvable."},
     },
 )
-async def delete_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_lead_full(
+    lead_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retourne la fiche complète d'un lead à partir de son UUID, incluant :
+    - Les données du lead
+    - Les données de l'entreprise associée (si existe)
+    - Toutes les interactions du lead
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/leads/{lead_id}/full"
+    ```
+    """
+    result = await db.execute(
+        select(Lead)
+        .options(joinedload(Lead.company), joinedload(Lead.interactions))
+        .where(Lead.id == lead_id)
+    )
+    lead = result.scalar_one_or_none()
+
+@router.get(
+    "/{lead_id}/full",
+    response_model=LeadWithCompanyAndInteractions,
+    summary="Récupérer un lead complet avec entreprise et interactions",
+    responses={
+        200: {"description": "Fiche complète du lead avec entreprise et interactions."},
+        404: {"description": "Lead introuvable."},
+    },
+)
+async def get_lead_full(
+    lead_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retourne la fiche complète d'un lead à partir de son UUID, incluant :
+    - Les données du lead
+    - Les données de l'entreprise associée (si existe)
+    - Toutes les interactions du lead
+
+    ### cURL
+    ```bash
+    curl "{{BASE_URL}}/api/v1/leads/{lead_id}/full"
+    ```
+    """
+    result = await db.execute(
+        select(Lead)
+        .options(joinedload(Lead.company), joinedload(Lead.interactions))
+        .where(Lead.id == lead_id)
+    )
+    lead = result.scalar_one_or_none()
+
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead introuvable.")
+
+    return LeadWithCompanyAndInteractions.from_orm(lead)
+
+
     """
     Supprime un lead et toutes ses interactions associées (cascade `ON DELETE CASCADE`).
 
